@@ -170,3 +170,5 @@ iframe.card-img{border:0}
 :where(.acts){--c1:#1d5ca8;--c2:#29a3cf}
 .infos{display:grid;gap:22px}.info{position:relative;display:block;border-radius:18px;overflow:hidden;box-shadow:var(--sh)}.info img{width:100%;transition:transform .6s var(--e)}.info:hover img{transform:scale(1.02)}.info span{position:absolute;right:14px;bottom:14px;background:var(--y);color:var(--pdd);font-weight:800;font-size:.85rem;padding:6px 14px;border-radius:999px}
 @media (max-width:1020px){.commit{grid-template-columns:1fr 1fr}}@media (max-width:600px){.commit{grid-template-columns:1fr}}
+@media (max-width:860px){.plan-grid{padding-top:0}.plan-shield{position:static;order:-1;justify-self:center;transform:none;margin-bottom:-4px}}
+@media (max-width:480px){.sub img{aspect-ratio:16/9;max-height:170px}}
