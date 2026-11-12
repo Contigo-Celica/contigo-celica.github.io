@@ -104,7 +104,7 @@
     return `<section class="hero" id="inicio"><div class="hero-bg" aria-hidden="true"><i></i><i></i><i></i></div><div class="wrap hero-in">
         <div class="hero-txt intro"><span class="kicker">${esc(s.hero_kicker)}</span><h1>${esc(s.candidate_name)}</h1><p class="role">${esc(s.candidate_role)}</p><p class="lead">${esc(s.hero_text)}</p>
           <div class="cta"><a href="#propuestas" class="btn btn-y">${esc(s.hero_cta || 'Propuestas')}</a><a href="#participa" class="btn btn-o">Envía tu idea</a></div></div>
-        <div class="hero-pic intro d2">${s.hero_photo ? `<img src="${esc(src(s.hero_photo))}" alt="${esc(s.candidate_name)}" fetchpriority="high" width="890" height="1205">` : '<div class="ph big"><span>J</span></div>'}<span class="hero-badge">${esc(s.party)}</span></div>
+        <div class="hero-pic intro d2">${s.hero_photo ? `<img src="${esc(src(s.hero_photo))}" alt="${esc(s.candidate_name)}" fetchpriority="high" width="890" height="1205">` : '<div class="ph big"><span>J</span></div>'}</div>
       </div>${seal()}</section>`
       + sec('', 'biografia', `<div class="wrap bio"><div class="bio-pic rv">${pic(s.bio_photo, s.candidate_name, 'bio-img', true)}</div><div class="rv d2"><span class="eyebrow">Conóceme</span><h2 class="ttl">${esc(s.bio_title)}</h2><div class="prose">${paras(s.bio_text)}</div></div></div>`)
       + sec('alt', 'experiencia', `<div class="wrap">${head('Trayectoria', s.exp_title, s.exp_intro)}<div class="exp">${tl(form_, 'Formación académica')}${tl(tray, 'Trayectoria institucional')}</div></div>`)
