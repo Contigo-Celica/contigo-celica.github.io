@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src https://mrswmolqdvhxfjkyxybd.supabase.co wss://mrswmolqdvhxfjkyxybd.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>Panel · Jorge Jaramillo ADN7</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="../assets/css/admin.css">
+<link rel="icon" href="../assets/brand/logo-color.webp">
+</head>
+<body>
+<section id="login" class="login" hidden>
+  <form class="login-box">
+    <img src="../assets/brand/logo-color.webp" alt="" width="110" height="105">
+    <h1>Panel administrativo</h1>
+    <p class="muted">Acceso exclusivo para administradores autorizados.</p>
+    <label>Correo electrónico<input name="email" type="email" autocomplete="username" required></label>
+    <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+    <button class="btn">Ingresar</button>
+    <p class="err" role="alert"></p>
+  </form>
+</section>
+<div id="app" class="app" hidden>
+  <aside class="side">
+    <div class="side-top"><img src="../assets/brand/logo-blanco.webp" alt="" width="48" height="46"><div><b>Panel ADN7</b><small id="who"></small></div></div>
+    <nav id="nav"></nav>
+    <div class="side-bottom"><a href="../" target="_blank">Ver sitio ↗</a><button id="logout" class="link">Cerrar sesión</button></div>
+  </aside>
+  <button class="mnav" aria-label="Menú">☰</button>
+  <main id="view" class="view"></main>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<script src="../assets/js/vendor/supabase.min.js"></script>
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/common.js"></script>
+<script src="../assets/js/admin.js"></script>
+</body>
+</html>

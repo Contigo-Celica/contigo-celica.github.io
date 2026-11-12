@@ -1,0 +1,1 @@
+-- Estructura aplicada en Supabase (migraciones sitio_campana_inicial y revoke_trigger_rpc). Ver historial en el panel de Supabase.
