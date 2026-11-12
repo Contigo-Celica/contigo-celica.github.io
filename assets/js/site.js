@@ -24,6 +24,14 @@
   const news = p => of('news', p).sort((a, b) => (b.date || b.created).localeCompare(a.date || a.created));
   const cats = (s.categories || '').split('\n').map(c => c.trim()).filter(Boolean);
   const href = p => ROOT + p;
+  const pillars = of('pillars');
+  const subs = p => [1, 2].filter(n => p['sub' + n + '_title']).map(n => ({ t: p['sub' + n + '_title'], x: p['sub' + n + '_text'], img: p['sub' + n + '_image'] }));
+  const plan = () => pillars.length ? `${s.plan_quote ? `<blockquote class="plan-quote rv">“${esc(s.plan_quote)}”</blockquote>` : ''}<div class="plan rv"><div class="plan-grid">${pillars.map((p, i) => `<a class="pillar c-${esc(p.color || 'azul')}" href="${href('eje/' + p.slug + '/')}">
+      <h3 class="pillar-h"><span>${i + 1}.</span> ${esc(p.title)}</h3>
+      <div class="pillar-b">${subs(p).map(u => `<div class="sub"><h4>${esc(u.t)}</h4>${u.img ? `<img src="${esc(src(u.img))}" alt="" loading="lazy">` : ''}<p>${esc(u.x)}</p></div>`).join('')}</div>
+      <span class="pillar-more">Conoce más sobre este eje →</span></a>`).join('')}
+      <img class="plan-shield" src="${esc(src('assets/plan/escudo.webp'))}" alt="Plan Contigo" width="150" height="160"></div>
+    ${s.plan_image ? `<p class="plan-full"><a href="${esc(src(s.plan_image))}" data-lb data-cap="${esc(s.plan_title)}">🔍 Ver infografía completa</a></p>` : ''}</div>${facts(s.plan_commitments).length ? `<div class="commit">${facts(s.plan_commitments).map(([t, x]) => `<div class="commit-i rv"><h4>${esc(t)}</h4><p>${esc(x)}</p></div>`).join('')}</div>` : ''}` : '';
 
   // ---------- piezas
   const seal = () => s.seal ? `<img class="seal" src="${esc(src(s.seal))}" alt="Una sola lucha por Celica" width="96" height="110" loading="lazy">` : '';
@@ -108,7 +116,7 @@
       </div>${seal()}</section>`
       + sec('', 'biografia', `<div class="wrap bio"><div class="bio-pic rv">${pic(s.bio_photo, s.candidate_name, 'bio-img', true)}</div><div class="rv d2"><span class="eyebrow">Conóceme</span><h2 class="ttl">${esc(s.bio_title)}</h2><div class="prose">${paras(s.bio_text)}</div></div></div>`)
       + sec('alt', 'experiencia', `<div class="wrap">${head('Trayectoria', s.exp_title, s.exp_intro)}<div class="exp">${tl(form_, 'Formación académica')}${tl(tray, 'Trayectoria institucional')}</div></div>`)
-      + sec('', 'propuestas', `<div class="wrap">${head('Plan de trabajo', s.proposals_title, s.proposals_intro)}<div class="chips rv"><button class="chip on" data-f="*">Todas</button><button class="chip" data-f="">Cantonales</button>${parishes.map(p => `<button class="chip" data-f="${p.slug}">${esc(p.name)}</button>`).join('')}</div>${propsGrid(of('proposals'))}</div>`)
+      + sec('', 'propuestas', `<div class="wrap">${pillars.length ? head('Plan Contigo', s.plan_title, s.plan_intro) + plan() + `<h3 class="sub-ttl rv">${esc(s.proposals_title)}</h3>` : head('Plan de trabajo', s.proposals_title, s.proposals_intro)}<div class="chips rv"><button class="chip on" data-f="*">Todas</button><button class="chip" data-f="">Cantonales</button>${parishes.map(p => `<button class="chip" data-f="${p.slug}">${esc(p.name)}</button>`).join('')}</div>${propsGrid(of('proposals'))}</div>`)
       + sec('purple', 'parroquias', `<div class="wrap">${head('Territorio', 'Nuestras parroquias', 'Propuestas, comunidades y fotografías de cada rincón del cantón.', true)}<div class="pgrid">${parishes.map(p => `<a class="pcard rv" href="${href('parroquia/' + p.slug + '/')}">${pic(p.cover, p.name, 'pcard-img')}<span class="pcard-t"><b>${esc(p.name)}</b><small>${esc(p.tagline || 'Ver propuestas y comunidades')} →</small></span></a>`).join('')}</div></div>`)
       + sec('', 'noticias', `<div class="wrap">${head('Agenda', s.news_title, s.news_intro)}${newsGrid(news().slice(0, 12))}</div>`)
       + sec('alt', 'equipo', `<div class="wrap">${head('Juntas parroquiales', s.team_title, s.team_intro)}</div>${teamStrip(of('team'))}`)
@@ -132,7 +140,23 @@
       + form();
   }
 
-  root.outerHTML = header() + `<main>${page === 'parish' ? parish() : home()}</main>` + footer();
+
+  function pillar() {
+    const i = pillars.findIndex(p => p.slug === slug), p = pillars[i];
+    if (!p) return '<section class="sec"><div class="wrap head"><h1 class="ttl">Eje no encontrado</h1></div></section>';
+    document.title = `${p.title} · Plan Contigo | ${s.site_name}`;
+    const vid = yt(p.video_url), props = of('proposals').filter(x => x.pillar === p.slug), c = esc(p.color || 'azul');
+    return `<section class="phero eje c-${c}"><div class="wrap phero-in intro"><a href="${ROOT}#propuestas" class="back">← Los 4 pilares del Plan Contigo</a><span class="kicker">Eje ${i + 1} · Plan Contigo</span><h1>${esc(p.title)}</h1>${p.tagline ? `<p class="lead">${esc(p.tagline)}</p>` : ''}</div>${seal()}</section>`
+      + sec('', '', `<div class="wrap pinfo"><div class="rv"><span class="eyebrow">Más información</span><div class="prose">${paras(p.detail)}</div></div>${vid ? `<div class="rv d2"><button class="yt card-img" data-yt="${vid}" aria-label="Reproducir video"><img src="https://i.ytimg.com/vi/${vid}/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span></button></div>` : ''}</div>`)
+      + (facts(p.actions).length ? sec('alt', '', `<div class="wrap">${head('Líneas de acción', '¿Qué haremos?')}<ol class="acts c-${c}">${facts(p.actions).map(([t, x]) => `<li class="act rv"><h3>${esc(t)}</h3><p>${esc(x)}</p></li>`).join('')}</ol></div>`) : '')
+      + ([p.infographic, p.infographic2].some(Boolean) ? sec('', '', `<div class="wrap">${head('Infografía', p.title)}<div class="infos">${[p.infographic, p.infographic2].filter(Boolean).map(u => `<a class="info rv" href="${esc(src(u))}" data-lb data-cap="${esc(p.title)}"><img src="${esc(src(u))}" alt="Infografía: ${esc(p.title)}" loading="lazy"><span>🔍 Ampliar</span></a>`).join('')}</div></div>`) : '')
+      + sec(facts(p.actions).length ? '' : 'alt', '', `<div class="wrap"><div class="subs c-${c}">${subs(p).map(u => `<article class="card rv">${u.img ? `<img class="card-img contain" src="${esc(src(u.img))}" alt="" loading="lazy">` : ''}<div class="card-b"><h3>${esc(u.t)}</h3><p>${esc(u.x)}</p></div></article>`).join('')}</div></div>`)
+      + sec('', 'propuestas', `<div class="wrap">${head('Propuestas', 'Proyectos de este eje')}${propsGrid(props)}</div>`)
+      + sec('alt', '', `<div class="wrap">${head('Plan Contigo', 'Conoce los otros ejes')}<div class="plan-mini">${pillars.filter(o => o !== p).map(o => `<a class="pillar-mini c-${esc(o.color || 'azul')}" href="${href('eje/' + o.slug + '/')}"><b>${pillars.indexOf(o) + 1}.</b> ${esc(o.title)} →</a>`).join('')}</div></div>`)
+      + form();
+  }
+
+  root.outerHTML = header() + `<main>${page === 'parish' ? parish() : page === 'pillar' ? pillar() : home()}</main>` + footer();
   if (location.hash) $(location.hash)?.scrollIntoView();
 
   // ---------- interacciones

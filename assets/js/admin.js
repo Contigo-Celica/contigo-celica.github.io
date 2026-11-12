@@ -47,7 +47,7 @@
     const st = await stats().catch(() => ({ ideas: {} })), c = schema.collections;
     const link = (h, t, b) => `<a href="#${h}">${t}${b ? `<span class="badge">${b}</span>` : ''}</a>`;
     $('#nav').innerHTML = link('/', 'Resumen', st.pending) +
-      `<div class="grp">Contenido</div>` + link('/ajustes/0', 'Textos y fotografías') + ['proposals', 'news', 'team', 'experience'].map(k => link('/c/' + k, c[k].label)).join('') +
+      `<div class="grp">Contenido</div>` + link('/ajustes/0', 'Textos y fotografías') + ['pillars', 'proposals', 'news', 'team', 'experience'].map(k => link('/c/' + k, c[k].label)).join('') +
       `<div class="grp">Territorio</div>` + ['parishes', 'communities', 'gallery'].map(k => link('/c/' + k, c[k].label)).join('') +
       `<div class="grp">Ciudadanía</div>` + link('/ideas', 'Ideas ciudadanas', st.ideas.nueva) +
       `<div class="grp">Sistema</div>` + link('/medios', 'Biblioteca de medios') + (isAdmin() ? link('/usuarios', 'Usuarios') : '') + link('/cuenta', 'Mi contraseña');
@@ -170,7 +170,7 @@
     const c = schema.collections[kind]; if (!c) return dash();
     const items = ok(await sb.from('items').select('*').eq('kind', kind).order('sort').order('id', { ascending: false })).map(r => ({ ...r.data, id: r.id, status: r.status, sort: r.sort }));
     const stf = sessionStorage.getItem('f_' + kind) || '';
-    const imgOf = it => it.image || it.photo || it.cover || '';
+    const imgOf = it => it.image || it.photo || it.cover || it.sub1_image || '';
     const draw = flt => {
       $('.list', view).innerHTML = items.filter(it => !flt || it.status === flt).map(it => `<div class="row">${imgOf(it) ? `<img src="${esc(src(imgOf(it)))}" alt="" loading="lazy">` : '<div class="noimg"></div>'}
         <div><h3>${esc(it[c.title] || '(sin título)')}<span class="st ${it.status}">${it.status}</span></h3><small>${[it.parish !== undefined ? pname(it.parish) : '', it.category, it.date, it.role, it.period].filter(Boolean).map(esc).join(' · ')} · Orden ${it.sort}</small></div>
