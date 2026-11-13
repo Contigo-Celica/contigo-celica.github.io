@@ -117,12 +117,36 @@
   }
 
   // ---------------- subida optimizada de archivos
-  const toWebp = (bmp, max, q) => {
-    const k = Math.min(1, max / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
-    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
-    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-    return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('No se pudo procesar la imagen.')), 'image/webp', q));
+  // Decodifica cualquier imagen (PNG, JPG, WebP; también PNG de 16 bits o con perfil de color en Safari).
+  const decode = async file => {
+    try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch { }
+    try { return await createImageBitmap(file); } catch { }
+    const url = URL.createObjectURL(file);
+    try { const im = new Image(); im.src = url; await im.decode(); return im; }
+    catch { throw new Error('No se pudo leer la imagen. Ábrela y guárdala de nuevo como PNG o JPG.'); }
+    finally { setTimeout(() => URL.revokeObjectURL(url), 60000); }
   };
+  const blobOf = (c, type, q) => new Promise(res => c.toBlob(res, type, q));
+  // Reduce y convierte a WebP; si el navegador no sabe WebP usa JPG (o PNG si la imagen tiene transparencia).
+  const shrink = async (img, max, q) => {
+    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    for (let m = max; m >= 600; m = Math.round(m * .7)) {
+      const k = Math.min(1, m / Math.max(w, h)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+      const x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+      let b = await blobOf(c, 'image/webp', q);
+      if (b && b.type !== 'image/webp') {
+        const d = x.getImageData(0, 0, c.width, c.height).data; let alpha = false;
+        for (let i = 3; i < d.length; i += 16) if (d[i] < 250) { alpha = true; break; }
+        b = alpha ? await blobOf(c, 'image/png') : await blobOf(c, 'image/jpeg', .86);
+      }
+      if (b) return b;
+    }
+    throw new Error('La imagen es demasiado grande para procesarla. Redúcela e inténtalo de nuevo.');
+  };
+  const EXT = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif' };
+  const typeOf = f => /^image\/(jpeg|png|webp|gif)$/.test(f.type) ? f.type : f.type === 'image/x-png' ? 'image/png' :
+    ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' })[(f.name.split('.').pop() || '').toLowerCase()] || '';
   async function upload(file) {
     const id = crypto.randomUUID().replace(/-/g, '').slice(0, 16), bucket = sb.storage.from('media');
     const put = async (path, body, type) => { ok(await bucket.upload(path, body, { contentType: type, cacheControl: '31536000', upsert: false })); return bucket.getPublicUrl(path).data.publicUrl; };
@@ -130,12 +154,13 @@
       if (file.size > 50 * 1024 * 1024) throw new Error('El video supera 50 MB. Súbelo a YouTube o Facebook y pega el enlace.');
       return put(`video/${id}.${file.type.split('/')[1]}`, file, file.type);
     }
-    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) throw new Error('Formato no permitido.');
-    if (file.type === 'image/gif') return put(`img/${id}.gif`, file, 'image/gif');
-    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
-    const [big, small] = await Promise.all([toWebp(bmp, 2200, .84), toWebp(bmp, 760, .8)]);
-    await put(`img/${id}_t.webp`, small, 'image/webp');
-    return put(`img/${id}.webp`, big, 'image/webp');
+    const type = typeOf(file);
+    if (!type) throw new Error('Formato no permitido. Usa PNG, JPG, WebP o GIF.');
+    if (type === 'image/gif') return put(`img/${id}.gif`, file, 'image/gif');
+    const img = await decode(file);
+    const big = await shrink(img, 2200, .84), small = await shrink(img, 760, .8);
+    await put(`img/${id}_t.${EXT[small.type]}`, small, small.type);
+    return put(`img/${id}.${EXT[big.type]}`, big, big.type);
   }
 
   // ---------------- resumen
@@ -262,12 +287,12 @@
   async function mediaView() {
     const bucket = sb.storage.from('media');
     const [img, vid] = await Promise.all(['img', 'video'].map(d => bucket.list(d, { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } })));
-    const files = [...(img.data || []).filter(f => !f.name.endsWith('_t.webp')).map(f => ({ path: 'img/' + f.name, type: 'image' })), ...(vid.data || []).map(f => ({ path: 'video/' + f.name, type: 'video' }))]
+    const files = [...(img.data || []).filter(f => !/_t\.(webp|jpg|png)$/.test(f.name)).map(f => ({ path: 'img/' + f.name, type: 'image' })), ...(vid.data || []).map(f => ({ path: 'video/' + f.name, type: 'video' }))]
       .filter(f => !f.path.endsWith('.emptyFolderPlaceholder'));
     const pub = p => bucket.getPublicUrl(p).data.publicUrl;
     view.innerHTML = `<div class="bar"><h1>Biblioteca de medios</h1><label class="btn y">+ Subir fotos o videos<input type="file" hidden multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"></label></div>
       <p class="muted">Las imágenes se optimizan automáticamente (WebP en alta resolución + miniatura). Copia la dirección de un archivo para usarlo en cualquier sección.</p>
-      <div class="grid-media">${files.map(m => `<div class="mi">${m.type === 'video' ? `<video src="${esc(pub(m.path))}" muted preload="metadata"></video>` : `<img src="${esc(pub(m.path.replace(/\.webp$/, '_t.webp')))}" alt="" loading="lazy">`}
+      <div class="grid-media">${files.map(m => `<div class="mi">${m.type === 'video' ? `<video src="${esc(pub(m.path))}" muted preload="metadata"></video>` : `<img src="${esc(pub(m.path.replace(/\.(webp|jpg|png)$/, '_t.$1')))}" alt="" loading="lazy">`}
         <div><button class="btn sm g" data-copy="${esc(pub(m.path))}">Copiar URL</button>${isAdmin() ? `<button class="btn sm bad" data-del="${esc(m.path)}">×</button>` : ''}</div></div>`).join('') || '<p class="muted">Aún no hay archivos.</p>'}</div>`;
     $('input[type=file]', view).onchange = guard(async e => {
       for (const file of e.target.files) { toast('Subiendo ' + file.name + '…'); await upload(file); }
@@ -278,7 +303,7 @@
       if (b.dataset.copy) { await navigator.clipboard.writeText(b.dataset.copy).catch(() => prompt('Copia la URL:', b.dataset.copy)); toast('URL copiada'); }
       if (b.dataset.del) {
         if (!confirm('¿Eliminar el archivo? Si está en uso, dejará de mostrarse.')) return;
-        const p = b.dataset.del; ok(await bucket.remove(p.endsWith('.webp') ? [p, p.replace(/\.webp$/, '_t.webp')] : [p])); mediaView();
+        const p = b.dataset.del; ok(await bucket.remove(/\.(webp|jpg|png)$/.test(p) ? [p, p.replace(/\.(webp|jpg|png)$/, '_t.$1')] : [p])); mediaView();
       }
     });
   }
