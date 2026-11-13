@@ -53,7 +53,7 @@
       <a href="${ROOT}" class="brand" aria-label="Inicio">${s.logo ? `<img src="${esc(src(s.logo))}" alt="${esc(s.candidate_name)}" width="54" height="54">` : ''}
         <span><b>${esc((s.candidate_name || '').replace('Abg. ', ''))}</b><small>${esc(s.party)} · Alcaldía de Celica</small></span></a>
       <button class="burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="menu"><i></i><i></i><i></i></button>
-      <ul class="menu" id="menu">${[['inicio', 'Inicio'], ['biografia', 'Biografía'], ['experiencia', 'Experiencia'], ['propuestas', 'Propuestas'], ['noticias', 'Noticias'], ['galeria', 'Galería'], ['contacto', 'Contacto']]
+      <ul class="menu" id="menu">${[['inicio', 'Inicio'], ['biografia', 'Biografía'], ['experiencia', 'Experiencia'], ['galeria', 'Galería'], ['propuestas', 'Propuestas'], ['noticias', 'Noticias'], ['contacto', 'Contacto']]
       .map(([h, t]) => `<li><a href="${h === 'contacto' ? '#contacto' : ROOT + '#' + h}">${t}</a></li>`).join('')}<li><a href="#participa" class="btn btn-y sm">Participa</a></li></ul>
     </div></header>`;
 
@@ -122,10 +122,10 @@
       </div>${seal()}</section>`
       + sec('', 'biografia', `<div class="wrap bio"><div class="bio-pic rv">${pic(s.bio_photo, s.candidate_name, 'bio-img', true)}</div><div class="rv d2"><span class="eyebrow">Conóceme</span><h2 class="ttl">${esc(s.bio_title)}</h2><div class="prose">${paras(s.bio_text)}</div></div></div>`)
       + sec('alt', 'experiencia', `<div class="wrap">${head('Trayectoria', s.exp_title, s.exp_intro)}<div class="exp">${tl(form_, 'Formación académica')}${tl(tray, 'Trayectoria institucional')}</div></div>`)
+      + sec('purple', 'galeria', `<div class="wrap">${head('Galería', s.gallery_title || 'Nuestra campaña en imágenes', s.gallery_intro, true)}</div>${galStrip(of('gallery'))}`)
       + sec('', 'propuestas', `<div class="wrap">${pillars.length ? head('Plan Contigo', s.plan_title, s.plan_intro) + plan() + `<h3 class="sub-ttl rv">${esc(s.proposals_title)}</h3>` : head('Plan de trabajo', s.proposals_title, s.proposals_intro)}<div class="chips rv"><button class="chip on" data-f="">Del cantón</button>${parishes.map(p => `<button class="chip" data-f="${p.slug}">${esc(p.name)}</button>`).join('')}<button class="chip" data-f="*">Todas</button></div>${propsGrid(of('proposals'))}</div>`)
       + sec('purple', 'parroquias', `<div class="wrap">${head('Territorio', 'Nuestras parroquias', 'Propuestas, comunidades y fotografías de cada rincón del cantón.', true)}<div class="pgrid">${parishes.map(p => `<a class="pcard rv" href="${href('parroquia/' + p.slug + '/')}">${pic(p.cover, p.name, 'pcard-img')}<span class="pcard-t"><b>${esc(p.name)}</b><small>${esc(p.tagline || 'Ver propuestas y comunidades')} →</small></span></a>`).join('')}</div></div>`)
       + sec('', 'noticias', `<div class="wrap">${head('Agenda', s.news_title, s.news_intro)}${newsGrid(news().slice(0, 12))}</div>`)
-      + sec('alt', 'galeria', `<div class="wrap">${head('Galería', s.gallery_title || 'Nuestra campaña en imágenes', s.gallery_intro)}</div>${galStrip(of('gallery'))}`)
       + (ideas.length ? sec('', 'voces', `<div class="wrap">${head('Voces ciudadanas', 'Lo que propone la gente')}<div class="voices">${ideas.map(i => `<blockquote class="voice rv"><p>“${esc(i.message.length > 260 ? i.message.slice(0, 257) + '…' : i.message)}”</p><footer>${esc(i.category || 'Aporte ciudadano')}${i.parish ? ' · ' + esc(parishNames[i.parish]) : ''}</footer></blockquote>`).join('')}</div></div>`) : '')
       + form();
   }
@@ -141,7 +141,7 @@
       + sec('alt', 'propuestas', `<div class="wrap">${head('Plan de trabajo', 'Propuestas para ' + p.name)}${propsGrid(of('proposals', slug))}</div>`)
       + (comm.length ? sec('', '', `<div class="wrap">${head('Territorio', 'Comunidades')}<div class="grid3">${comm.map(c => `<article class="card rv">${pic(c.image, c.name, 'card-img')}<div class="card-b"><h3>${esc(c.name)}</h3>${c.description ? `<div class="prose sm">${paras(c.description)}</div>` : ''}</div></article>`).join('')}</div></div>`) : '')
       + (gal.length ? sec('alt', '', `<div class="wrap">${head('Galería', p.name + ' en imágenes')}<div class="gal">${gal.map(i => `<a class="gal-i rv" href="${esc(src(i.image))}" data-lb data-cap="${esc((i.title || '') + (i.caption ? ' — ' + i.caption : ''))}">${pic(i.image, i.title || p.name)}</a>`).join('')}</div></div>`) : '')
-      + (team.length ? sec('', 'equipo', `<div class="wrap">${head('Junta parroquial', 'Nuestro equipo en ' + p.name)}</div>${teamStrip(team)}`) : '')
+      + (team.length ? sec('', 'equipo', `<div class="wrap">${head('Junta parroquial', 'Nuestro equipo en ' + p.name)}${team.map(t => `<a class="teamfull rv" href="${esc(src(t.photo))}" data-lb data-cap="${esc([t.name, t.role].filter(Boolean).join(' · '))}"><img src="${esc(src(t.photo))}" alt="${esc('Equipo de ' + p.name)}" loading="lazy" decoding="async"><span>🔍 Ampliar</span></a>`).join('')}</div>`) : '')
       + (nw.length ? sec('alt', 'noticias', `<div class="wrap">${head('Agenda', 'Actividades en ' + p.name)}${newsGrid(nw)}</div>`) : '')
       + form();
   }
