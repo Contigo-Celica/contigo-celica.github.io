@@ -78,7 +78,7 @@
 
   // Portada de una publicación de red social: imagen subida o tarjeta con el color de la red.
   const socCover = (sc, image, alt, cls) => image ? pic(image, alt, cls) : `<div class="${cls} soc-ph soc-${sc.net}" aria-hidden="true"><b>${sc.name}</b></div>`;
-  const socLink = (sc, cls, inner, cap) => `<a class="${cls} is-vid soc" href="${esc(sc.url)}" target="_blank" rel="noopener"${sc.embed ? ` data-lb data-embed="${esc(sc.embed)}"${sc.tall ? ' data-tall' : ''} data-net="${sc.name}" data-cap="${esc(cap)}"` : ''} draggable="false">${inner}<span class="play" aria-hidden="true"></span><span class="soc-chip soc-${sc.net}">${sc.name}</span></a>`;
+  const socLink = (sc, cls, inner) => `<a class="${cls} soc" href="${esc(sc.url)}" target="_blank" rel="noopener" draggable="false">${inner}</a>`;
 
   const newsGrid = list => `<div class="grid3">${list.map(n => {
     const vid = yt(n.video_url), link = safeUrl(n.link), sc = !vid ? social(n.video_url) || social(n.link) : null;
@@ -215,15 +215,14 @@
   const lb = $('.lb'), lbm = $('.lb-m', lb);
   const lbClose = () => { lb.hidden = true; lbm.innerHTML = ''; };
   document.addEventListener('click', e => {
+    if (e.target.closest('.carousel.dragged a')) { e.preventDefault(); return; }
     const a = e.target.closest('[data-lb]'); if (!a) return;
     e.preventDefault(); if (a.closest('.carousel.dragged')) return;
     let m;
-    if (a.dataset.embed) { m = document.createElement('iframe'); m.src = a.dataset.embed; m.className = 'tall' in a.dataset ? 'tall' : ''; m.allow = 'autoplay; encrypted-media; picture-in-picture; clipboard-write'; m.allowFullscreen = true; m.title = a.dataset.net || 'Publicación'; }
-    else if (a.dataset.yt) { m = document.createElement('iframe'); m.src = `https://www.youtube-nocookie.com/embed/${a.dataset.yt}?autoplay=1`; m.allow = 'autoplay; encrypted-media; picture-in-picture'; m.allowFullscreen = true; m.title = 'Video'; }
+    if (a.dataset.yt) { m = document.createElement('iframe'); m.src = `https://www.youtube-nocookie.com/embed/${a.dataset.yt}?autoplay=1`; m.allow = 'autoplay; encrypted-media; picture-in-picture'; m.allowFullscreen = true; m.title = 'Video'; }
     else if ('video' in a.dataset) { m = document.createElement('video'); m.src = a.href; m.controls = m.autoplay = m.playsInline = true; }
     else { m = document.createElement('img'); m.src = a.href; m.alt = a.dataset.cap || ''; }
     lbm.replaceChildren(m); const cp = $('p', lb); cp.textContent = a.dataset.cap || '';
-    if (a.dataset.embed) { const o = document.createElement('a'); o.href = a.href; o.target = '_blank'; o.rel = 'noopener'; o.className = 'lb-open'; o.textContent = `Abrir en ${a.dataset.net} ↗`; cp.append(cp.textContent ? ' · ' : '', o); }
     lb.hidden = false;
   });
   lb.addEventListener('click', e => { if (!e.target.closest('.lb-m > *')) lbClose(); });
