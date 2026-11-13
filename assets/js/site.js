@@ -69,7 +69,7 @@
       <div><h2>Parroquias</h2><ul class="flinks">${parishes.map(p => `<li><a href="${href('parroquia/' + p.slug + '/')}">${esc(p.name)}</a></li>`).join('')}</ul></div>
     </div><div class="wrap ftr-bottom">© ${esc(s.candidate_name)} · ${esc(s.party)} · Celica, Loja, Ecuador</div>${seal()}</footer>
     ${waUrl ? `<a class="wa-float" href="${esc(waUrl)}" target="_blank" rel="noopener" aria-label="WhatsApp">${icon.wa}</a>` : ''}
-    <div class="lb" hidden><button class="lb-x" aria-label="Cerrar">×</button><img alt=""><p></p></div>`;
+    <div class="lb" hidden><button class="lb-x" aria-label="Cerrar">×</button><div class="lb-m"></div><p></p></div>`;
 
   const propsGrid = list => `<div class="grid3 props">${list.map(x => `<article class="card prop rv" data-parish="${esc(x.parish || '')}">
       ${x.image ? pic(x.image, x.title, 'card-img') : ''}<div class="card-b"><div class="tags">${x.category ? `<span class="tag">${esc(x.category)}</span>` : ''}<span class="tag t2">${esc(parishNames[x.parish] || 'Todo el cantón')}</span></div>
@@ -88,13 +88,23 @@
       ${n.video_url && !vid && safeUrl(n.video_url) ? `<a class="more" href="${esc(n.video_url)}" target="_blank" rel="noopener">▶ Ver video</a>` : link ? `<a class="more" href="${esc(link)}" target="_blank" rel="noopener">Leer más ↗</a>` : ''}</div></article>`;
   }).join('') || '<p class="muted empty">Pronto compartiremos nuestras actividades.</p>'}</div>`;
 
-  const teamStrip = list => list.length ? `<div class="marquee" aria-label="Equipo de trabajo"><div class="mq-track">${list.map(t => `<figure class="member">${pic(t.photo, t.name, 'member-img')}<figcaption><b>${esc(t.name)}</b>${t.role ? `<span>${esc(t.role)}</span>` : ''}${t.parish ? `<small>${esc(parishNames[t.parish])}</small>` : ''}</figcaption></figure>`).join('')}</div></div>`
-    : '<div class="wrap"><p class="muted empty">Pronto presentaremos a nuestro equipo.</p></div>';
-
+  // Elemento de galería: foto, video subido, YouTube (se abren en el visor) o Facebook (abre en pestaña nueva).
+  const galItem = (i, cls, imgCls = '', extra = '') => {
+    const id = yt(i.video_url), vurl = i.video ? src(i.video) : '', fb = !id && !vurl ? safeUrl(i.video_url) : '';
+    const vid = !!(id || vurl || fb), alt = i.title || 'Galería';
+    if (!i.image && !vid) return '';
+    const cover = i.image ? pic(i.image, alt, imgCls) : id ? `<img class="${imgCls}" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="${esc(alt)}" loading="lazy">`
+      : vurl ? `<video class="${imgCls}" src="${esc(vurl)}#t=0.5" muted playsinline preload="metadata"></video>` : `<div class="${imgCls} ph" aria-hidden="true"><span>▶</span></div>`;
+    const cap = esc((i.title || '') + (i.caption ? ' — ' + i.caption : ''));
+    const attrs = fb ? `href="${esc(fb)}" target="_blank" rel="noopener"`
+      : `href="${esc(id ? 'https://www.youtube.com/watch?v=' + id : vurl || src(i.image))}" data-lb${id ? ` data-yt="${id}"` : vurl ? ' data-video' : ''} data-cap="${cap}"`;
+    return `<a class="${cls}${vid ? ' is-vid' : ''}" ${attrs} draggable="false">${cover}${vid ? '<span class="play" aria-hidden="true">▶</span>' : ''}${extra}</a>`;
+  };
   const galStrip = list => {
-    if (!list.length) return '<div class="wrap"><p class="muted empty">Pronto compartiremos fotografías de la campaña.</p></div>';
-    const items = list.map(i => `<a class="shot" href="${esc(src(i.image))}" data-lb data-cap="${esc((i.title || '') + (i.caption ? ' — ' + i.caption : ''))}">${pic(i.image, i.title || 'Galería', 'shot-img')}${i.title || i.parish ? `<span class="shot-t">${i.title ? `<b>${esc(i.title)}</b>` : ''}${i.parish ? `<small>${esc(parishNames[i.parish])}</small>` : ''}</span>` : ''}</a>`).join('');
-    return list.length < 4 ? `<div class="wrap shots">${items}</div>` : `<div class="marquee" aria-label="Galería"><div class="mq-track">${items}</div></div>`;
+    const items = list.map(i => galItem(i, 'shot', 'shot-img', i.title || i.parish ? `<span class="shot-t">${i.title ? `<b>${esc(i.title)}</b>` : ''}${i.parish ? `<small>${esc(parishNames[i.parish])}</small>` : ''}</span>` : '')).join('');
+    if (!items) return '<div class="wrap"><p class="muted empty">Pronto compartiremos fotografías y videos de la campaña.</p></div>';
+    return list.length < 4 ? `<div class="wrap shots">${items}</div>`
+      : `<div class="carousel" aria-label="Galería"><button class="car-btn prev" type="button" aria-label="Anterior">‹</button><div class="car-view"><div class="car-track">${items}</div></div><button class="car-btn next" type="button" aria-label="Siguiente">›</button></div>`;
   };
 
   const form = () => sec('purple', 'participa', `<div class="wrap part"><div class="rv"><span class="eyebrow y">Tu voz cuenta</span><h2 class="ttl">${esc(s.participa_title)}</h2><p class="lead">${esc(s.participa_intro)}</p>
@@ -140,7 +150,7 @@
       + sec('', '', `<div class="wrap pinfo"><div class="rv"><span class="eyebrow">Conoce ${esc(p.name)}</span><div class="prose">${paras(p.description)}</div></div>${fx.length ? `<dl class="facts rv d2">${fx.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</div>`)
       + sec('alt', 'propuestas', `<div class="wrap">${head('Plan de trabajo', 'Propuestas para ' + p.name)}${propsGrid(of('proposals', slug))}</div>`)
       + (comm.length ? sec('', '', `<div class="wrap">${head('Territorio', 'Comunidades')}<div class="grid3">${comm.map(c => `<article class="card rv">${pic(c.image, c.name, 'card-img')}<div class="card-b"><h3>${esc(c.name)}</h3>${c.description ? `<div class="prose sm">${paras(c.description)}</div>` : ''}</div></article>`).join('')}</div></div>`) : '')
-      + (gal.length ? sec('alt', '', `<div class="wrap">${head('Galería', p.name + ' en imágenes')}<div class="gal">${gal.map(i => `<a class="gal-i rv" href="${esc(src(i.image))}" data-lb data-cap="${esc((i.title || '') + (i.caption ? ' — ' + i.caption : ''))}">${pic(i.image, i.title || p.name)}</a>`).join('')}</div></div>`) : '')
+      + (gal.length ? sec('alt', '', `<div class="wrap">${head('Galería', p.name + ' en imágenes y videos')}<div class="gal">${gal.map(i => galItem(i, 'gal-i rv')).join('')}</div></div>`) : '')
       + (team.length ? sec('', 'equipo', `<div class="wrap">${head('Junta parroquial', 'Nuestro equipo en ' + p.name)}${team.map(t => `<a class="teamfull rv" href="${esc(src(t.photo))}" data-lb data-cap="${esc([t.name, t.role].filter(Boolean).join(' · '))}"><img src="${esc(src(t.photo))}" alt="${esc('Equipo de ' + p.name)}" loading="lazy" decoding="async"><span>🔍 Ampliar</span></a>`).join('')}</div>`) : '')
       + (nw.length ? sec('alt', 'noticias', `<div class="wrap">${head('Agenda', 'Actividades en ' + p.name)}${newsGrid(nw)}</div>`) : '')
       + form();
@@ -195,10 +205,59 @@
     b.replaceWith(f);
   }));
 
-  const lb = $('.lb');
-  $$('[data-lb]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); $('img', lb).src = a.href; $('p', lb).textContent = a.dataset.cap || ''; lb.hidden = false; }));
-  lb.addEventListener('click', e => { if (e.target !== $('img', lb)) lb.hidden = true; });
-  addEventListener('keydown', e => { if (e.key === 'Escape') lb.hidden = true; });
+  // Visor: fotos, videos subidos y YouTube. Al cerrar se detiene la reproducción.
+  const lb = $('.lb'), lbm = $('.lb-m', lb);
+  const lbClose = () => { lb.hidden = true; lbm.innerHTML = ''; };
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-lb]'); if (!a) return;
+    e.preventDefault(); if (a.closest('.carousel.dragged')) return;
+    let m;
+    if (a.dataset.yt) { m = document.createElement('iframe'); m.src = `https://www.youtube-nocookie.com/embed/${a.dataset.yt}?autoplay=1`; m.allow = 'autoplay; encrypted-media; picture-in-picture'; m.allowFullscreen = true; m.title = 'Video'; }
+    else if ('video' in a.dataset) { m = document.createElement('video'); m.src = a.href; m.controls = m.autoplay = m.playsInline = true; }
+    else { m = document.createElement('img'); m.src = a.href; m.alt = a.dataset.cap || ''; }
+    lbm.replaceChildren(m); $('p', lb).textContent = a.dataset.cap || ''; lb.hidden = false;
+  });
+  lb.addEventListener('click', e => { if (!e.target.closest('.lb-m > *')) lbClose(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !lb.hidden) lbClose(); });
+
+  // Carrusel de la galería: avanza solo, con flechas, arrastre con el mouse y deslizamiento táctil.
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $$('.carousel').forEach(car => {
+    const view = $('.car-view', car), track = $('.car-track', car), n = track.children.length;
+    for (let k = 0; k < 2; k++) [...track.children].slice(0, n).forEach(i => { const c = i.cloneNode(true); c.setAttribute('aria-hidden', 'true'); c.tabIndex = -1; track.appendChild(c); });
+    const H = () => track.children[n].offsetLeft - track.children[0].offsetLeft; // ancho de una vuelta
+    const step = () => track.children[0].offsetWidth + 22;
+    const SPEED = 40; // px por segundo
+    let pos = 0, last = 0, hold = 0, hover = false, drag = null, anim = null;
+    const put = v => { const h = H(); pos = ((v % h) + h) % h; view.scrollLeft = pos + h; };
+    const pause = ms => { hold = Date.now() + ms; };
+    put(0);
+    const tick = t => {
+      const dt = Math.min(64, t - (last || t)); last = t;
+      if (anim) { const k = Math.min(1, (t - anim.t0) / 450), e = 1 - Math.pow(1 - k, 3); put(anim.from + (anim.to - anim.from) * e); if (k === 1) anim = null; }
+      else if (drag) { /* el arrastre mueve el carrusel */ }
+      else if (hover || Date.now() < hold || still) pos = view.scrollLeft - H();
+      else put(pos + SPEED * dt / 1000);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    const go = d => { anim = { from: pos, to: pos + d * step(), t0: performance.now() }; pause(5000); };
+    $('.prev', car).onclick = () => go(-1);
+    $('.next', car).onclick = () => go(1);
+    view.addEventListener('mouseenter', () => { hover = true; });
+    view.addEventListener('mouseleave', () => { hover = false; });
+    view.addEventListener('touchstart', () => pause(4000), { passive: true });
+    view.addEventListener('touchmove', () => pause(4000), { passive: true });
+    view.addEventListener('wheel', () => pause(3000), { passive: true });
+    view.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.button) return; drag = { x: e.clientX, p: pos, moved: false }; });
+    addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x; if (Math.abs(dx) > 5) { drag.moved = true; car.classList.add('grab'); } if (drag.moved) put(drag.p - dx); });
+    addEventListener('pointerup', () => {
+      if (!drag) return;
+      if (drag.moved) { car.classList.add('dragged'); setTimeout(() => car.classList.remove('dragged'), 0); }
+      car.classList.remove('grab'); drag = null; pause(2500);
+    });
+    view.addEventListener('dragstart', e => e.preventDefault());
+  });
 
   // formulario de participación (validación también en la base de datos)
   const ERR = { CEDULA: 'El número de cédula no es válido. Puedes dejarlo en blanco.', PHONE: 'El número de celular no es válido. Puedes dejarlo en blanco.', EMAIL: 'El correo electrónico no es válido. Puedes dejarlo en blanco.', LINKS: 'El mensaje contiene demasiados enlaces.', RATE: 'Has enviado varios aportes en poco tiempo. Inténtalo más tarde.' };
