@@ -116,7 +116,7 @@
       </div>${seal()}</section>`
       + sec('', 'biografia', `<div class="wrap bio"><div class="bio-pic rv">${pic(s.bio_photo, s.candidate_name, 'bio-img', true)}</div><div class="rv d2"><span class="eyebrow">Conóceme</span><h2 class="ttl">${esc(s.bio_title)}</h2><div class="prose">${paras(s.bio_text)}</div></div></div>`)
       + sec('alt', 'experiencia', `<div class="wrap">${head('Trayectoria', s.exp_title, s.exp_intro)}<div class="exp">${tl(form_, 'Formación académica')}${tl(tray, 'Trayectoria institucional')}</div></div>`)
-      + sec('', 'propuestas', `<div class="wrap">${pillars.length ? head('Plan Contigo', s.plan_title, s.plan_intro) + plan() + `<h3 class="sub-ttl rv">${esc(s.proposals_title)}</h3>` : head('Plan de trabajo', s.proposals_title, s.proposals_intro)}<div class="chips rv"><button class="chip on" data-f="*">Todas</button><button class="chip" data-f="">Cantonales</button>${parishes.map(p => `<button class="chip" data-f="${p.slug}">${esc(p.name)}</button>`).join('')}</div>${propsGrid(of('proposals'))}</div>`)
+      + sec('', 'propuestas', `<div class="wrap">${pillars.length ? head('Plan Contigo', s.plan_title, s.plan_intro) + plan() + `<h3 class="sub-ttl rv">${esc(s.proposals_title)}</h3>` : head('Plan de trabajo', s.proposals_title, s.proposals_intro)}<div class="chips rv"><button class="chip on" data-f="">Del cantón</button>${parishes.map(p => `<button class="chip" data-f="${p.slug}">${esc(p.name)}</button>`).join('')}<button class="chip" data-f="*">Todas</button></div>${propsGrid(of('proposals'))}</div>`)
       + sec('purple', 'parroquias', `<div class="wrap">${head('Territorio', 'Nuestras parroquias', 'Propuestas, comunidades y fotografías de cada rincón del cantón.', true)}<div class="pgrid">${parishes.map(p => `<a class="pcard rv" href="${href('parroquia/' + p.slug + '/')}">${pic(p.cover, p.name, 'pcard-img')}<span class="pcard-t"><b>${esc(p.name)}</b><small>${esc(p.tagline || 'Ver propuestas y comunidades')} →</small></span></a>`).join('')}</div></div>`)
       + sec('', 'noticias', `<div class="wrap">${head('Agenda', s.news_title, s.news_intro)}${newsGrid(news().slice(0, 12))}</div>`)
       + sec('alt', 'equipo', `<div class="wrap">${head('Juntas parroquiales', s.team_title, s.team_intro)}</div>${teamStrip(of('team'))}`)
@@ -173,6 +173,7 @@
     $$('.chip').forEach(x => x.classList.toggle('on', x === c));
     $$('.prop').forEach(p => p.classList.toggle('hide', c.dataset.f !== '*' && p.dataset.parish !== c.dataset.f));
   }));
+  $('.chips .chip.on')?.click();
 
   $$('.mq-track').forEach(t => {
     const items = [...t.children];

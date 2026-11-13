@@ -172,3 +172,4 @@ iframe.card-img{border:0}
 @media (max-width:1020px){.commit{grid-template-columns:1fr 1fr}}@media (max-width:600px){.commit{grid-template-columns:1fr}}
 @media (max-width:860px){.plan-grid{padding-top:0}.plan-shield{position:static;order:-1;justify-self:center;transform:none;margin-bottom:-4px}}
 @media (max-width:480px){.sub img{aspect-ratio:16/9;max-height:170px}}
+.prop .card-img{object-fit:contain;background:#fff;padding:6px}
