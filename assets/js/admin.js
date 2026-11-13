@@ -101,6 +101,25 @@
       }));
     });
   }
+  // Portada automática: si se pega un enlace de Facebook, Instagram o TikTok y no hay imagen, se descarga la portada pública.
+  function bindSocial(form) {
+    const img = form.elements.image, urls = ['video_url', 'link'].map(n => form.elements[n]).filter(Boolean);
+    if (!img || !urls.length) return;
+    const pick = () => urls.map(u => u.value.trim()).find(v => APP.social(v));
+    const fetchCover = async u => {
+      toast('Obteniendo la portada de la publicación…');
+      const { data, error } = await sb.functions.invoke('portada', { body: { url: u } });
+      if (error || !(data instanceof Blob) || !data.type.startsWith('image/')) {
+        let msg = ''; try { msg = (await error?.context?.json())?.error || ''; } catch { }
+        throw new Error((msg ? msg + '. ' : '') + 'No se pudo obtener la portada automáticamente; puedes subir una imagen.');
+      }
+      img.value = await upload(new File([data], 'portada', { type: data.type })); img.dispatchEvent(new Event('change')); toast('Portada agregada');
+    };
+    urls.forEach(u => u.addEventListener('change', guard(async () => { const v = pick(); if (v && !img.value.trim()) await fetchCover(v); })));
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm g'; b.textContent = 'Portada desde el enlace';
+    b.onclick = guard(async () => { const v = pick(); if (!v) throw new Error('Primero pega un enlace de Facebook, Instagram o TikTok.'); await fetchCover(v); });
+    img.closest('.media').querySelector('.mb').append(b);
+  }
   function collect(form, fields) {
     const out = {};
     for (const f of fields) {
@@ -222,7 +241,7 @@
     view.innerHTML = `<div class="bar"><h1>${id === 'new' ? 'Nuevo' : 'Editar'} · ${esc(c.label)}</h1><a class="btn g" href="#/c/${kind}">← Volver</a></div>
       <form class="panel form">${c.fields.map(f => field(f, it[f.name])).join('')}${stSel}<label>Orden (menor aparece primero)<input type="number" name="sort" value="${+it.sort || 0}"></label>
       <div class="full"><button class="btn">Guardar</button></div></form>`;
-    const form = $('form', view); bindMedia(form);
+    const form = $('form', view); bindMedia(form); bindSocial(form);
     form.onsubmit = guard(async e => {
       e.preventDefault();
       const data = { ...(it._data || {}), ...collect(form, c.fields) };

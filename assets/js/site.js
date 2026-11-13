@@ -1,5 +1,5 @@
 (async () => {
-  const { sb, ROOT, esc, src, thumb, paras, yt, facts, wa, safeUrl, parishNames } = window.APP;
+  const { sb, ROOT, esc, src, thumb, paras, yt, facts, wa, safeUrl, parishNames, social } = window.APP;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const body = document.body, page = body.dataset.page, slug = body.dataset.slug || '';
   const root = $('#root');
@@ -76,21 +76,27 @@
       <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}${x.body ? `<details><summary>Ver detalle</summary><div class="prose sm">${paras(x.body)}</div></details>` : ''}</div></article>`).join('')
     || '<p class="muted empty">Muy pronto publicaremos las propuestas.</p>'}</div>`;
 
+  // Portada de una publicación de red social: imagen subida o tarjeta con el color de la red.
+  const socCover = (sc, image, alt, cls) => image ? pic(image, alt, cls) : `<div class="${cls} soc-ph soc-${sc.net}" aria-hidden="true"><b>${sc.name}</b></div>`;
+  const socLink = (sc, cls, inner, cap) => `<a class="${cls} is-vid soc" href="${esc(sc.url)}" target="_blank" rel="noopener"${sc.embed ? ` data-lb data-embed="${esc(sc.embed)}"${sc.tall ? ' data-tall' : ''} data-net="${sc.name}" data-cap="${esc(cap)}"` : ''} draggable="false">${inner}<span class="play" aria-hidden="true"></span><span class="soc-chip soc-${sc.net}">${sc.name}</span></a>`;
+
   const newsGrid = list => `<div class="grid3">${list.map(n => {
-    const vid = yt(n.video_url), link = safeUrl(n.link);
+    const vid = yt(n.video_url), link = safeUrl(n.link), sc = !vid ? social(n.video_url) || social(n.link) : null;
     let media = '';
     if (n.video) media = `<video class="card-img" src="${esc(src(n.video))}" controls preload="none" ${n.image ? `poster="${esc(src(thumb(n.image)))}"` : ''} playsinline></video>`;
     else if (vid) media = `<button class="yt card-img" data-yt="${vid}" aria-label="Reproducir video"><img src="https://i.ytimg.com/vi/${vid}/hqdefault.jpg" alt="${esc(n.title)}" loading="lazy"><span class="play"></span></button>`;
+    else if (sc) media = socLink(sc, 'card-img-wrap', socCover(sc, n.image, n.title, 'card-img'), n.title);
     else if (n.image) media = link ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="imglink">${pic(n.image, n.title, 'card-img')}<span class="go">Ver más ↗</span></a>` : pic(n.image, n.title, 'card-img');
     const d = n.date ? `${n.date.slice(8, 10)}/${n.date.slice(5, 7)}/${n.date.slice(0, 4)}` : '';
     return `<article class="card news rv">${media}<div class="card-b"><div class="tags">${d ? `<span class="tag">${d}</span>` : ''}${n.parish ? `<span class="tag t2">${esc(parishNames[n.parish])}</span>` : ''}</div>
       <h3>${esc(n.title)}</h3>${n.summary ? `<p>${esc(n.summary)}</p>` : ''}
-      ${n.video_url && !vid && safeUrl(n.video_url) ? `<a class="more" href="${esc(n.video_url)}" target="_blank" rel="noopener">▶ Ver video</a>` : link ? `<a class="more" href="${esc(link)}" target="_blank" rel="noopener">Leer más ↗</a>` : ''}</div></article>`;
+      ${sc ? `<a class="more" href="${esc(sc.url)}" target="_blank" rel="noopener">Ver en ${sc.name} ↗</a>` : n.video_url && !vid && safeUrl(n.video_url) ? `<a class="more" href="${esc(n.video_url)}" target="_blank" rel="noopener">▶ Ver video</a>` : link ? `<a class="more" href="${esc(link)}" target="_blank" rel="noopener">Leer más ↗</a>` : ''}</div></article>`;
   }).join('') || '<p class="muted empty">Pronto compartiremos nuestras actividades.</p>'}</div>`;
 
   // Elemento de galería: foto, video subido, YouTube (se abren en el visor) o Facebook (abre en pestaña nueva).
   const galItem = (i, cls, imgCls = '', extra = '') => {
-    const id = yt(i.video_url), vurl = i.video ? src(i.video) : '', fb = !id && !vurl ? safeUrl(i.video_url) : '';
+    const id = yt(i.video_url), vurl = i.video ? src(i.video) : '', sc = !id && !vurl ? social(i.video_url) : null, fb = !id && !vurl && !sc ? safeUrl(i.video_url) : '';
+    if (sc) return socLink(sc, cls, socCover(sc, i.image, i.title || sc.name, imgCls), (i.title || '') + (i.caption ? ' — ' + i.caption : '')).replace('</a>', extra + '</a>');
     const vid = !!(id || vurl || fb), alt = i.title || 'Galería';
     if (!i.image && !vid) return '';
     const cover = i.image ? pic(i.image, alt, imgCls) : id ? `<img class="${imgCls}" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="${esc(alt)}" loading="lazy">`
@@ -98,7 +104,7 @@
     const cap = esc((i.title || '') + (i.caption ? ' — ' + i.caption : ''));
     const attrs = fb ? `href="${esc(fb)}" target="_blank" rel="noopener"`
       : `href="${esc(id ? 'https://www.youtube.com/watch?v=' + id : vurl || src(i.image))}" data-lb${id ? ` data-yt="${id}"` : vurl ? ' data-video' : ''} data-cap="${cap}"`;
-    return `<a class="${cls}${vid ? ' is-vid' : ''}" ${attrs} draggable="false">${cover}${vid ? '<span class="play" aria-hidden="true">▶</span>' : ''}${extra}</a>`;
+    return `<a class="${cls}${vid ? ' is-vid' : ''}" ${attrs} draggable="false">${cover}${vid ? '<span class="play" aria-hidden="true"></span>' : ''}${extra}</a>`;
   };
   const galStrip = list => {
     const items = list.map(i => galItem(i, 'shot', 'shot-img', i.title || i.parish ? `<span class="shot-t">${i.title ? `<b>${esc(i.title)}</b>` : ''}${i.parish ? `<small>${esc(parishNames[i.parish])}</small>` : ''}</span>` : '')).join('');
@@ -212,10 +218,13 @@
     const a = e.target.closest('[data-lb]'); if (!a) return;
     e.preventDefault(); if (a.closest('.carousel.dragged')) return;
     let m;
-    if (a.dataset.yt) { m = document.createElement('iframe'); m.src = `https://www.youtube-nocookie.com/embed/${a.dataset.yt}?autoplay=1`; m.allow = 'autoplay; encrypted-media; picture-in-picture'; m.allowFullscreen = true; m.title = 'Video'; }
+    if (a.dataset.embed) { m = document.createElement('iframe'); m.src = a.dataset.embed; m.className = 'tall' in a.dataset ? 'tall' : ''; m.allow = 'autoplay; encrypted-media; picture-in-picture; clipboard-write'; m.allowFullscreen = true; m.title = a.dataset.net || 'Publicación'; }
+    else if (a.dataset.yt) { m = document.createElement('iframe'); m.src = `https://www.youtube-nocookie.com/embed/${a.dataset.yt}?autoplay=1`; m.allow = 'autoplay; encrypted-media; picture-in-picture'; m.allowFullscreen = true; m.title = 'Video'; }
     else if ('video' in a.dataset) { m = document.createElement('video'); m.src = a.href; m.controls = m.autoplay = m.playsInline = true; }
     else { m = document.createElement('img'); m.src = a.href; m.alt = a.dataset.cap || ''; }
-    lbm.replaceChildren(m); $('p', lb).textContent = a.dataset.cap || ''; lb.hidden = false;
+    lbm.replaceChildren(m); const cp = $('p', lb); cp.textContent = a.dataset.cap || '';
+    if (a.dataset.embed) { const o = document.createElement('a'); o.href = a.href; o.target = '_blank'; o.rel = 'noopener'; o.className = 'lb-open'; o.textContent = `Abrir en ${a.dataset.net} ↗`; cp.append(cp.textContent ? ' · ' : '', o); }
+    lb.hidden = false;
   });
   lb.addEventListener('click', e => { if (!e.target.closest('.lb-m > *')) lbClose(); });
   addEventListener('keydown', e => { if (e.key === 'Escape' && !lb.hidden) lbClose(); });
