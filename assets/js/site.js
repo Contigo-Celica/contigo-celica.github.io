@@ -53,7 +53,7 @@
       <a href="${ROOT}" class="brand" aria-label="Inicio">${s.logo ? `<img src="${esc(src(s.logo))}" alt="${esc(s.candidate_name)}" width="54" height="54">` : ''}
         <span><b>${esc((s.candidate_name || '').replace('Abg. ', ''))}</b><small>${esc(s.party)} · Alcaldía de Celica</small></span></a>
       <button class="burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="menu"><i></i><i></i><i></i></button>
-      <ul class="menu" id="menu">${[['inicio', 'Inicio'], ['biografia', 'Biografía'], ['experiencia', 'Experiencia'], ['propuestas', 'Propuestas'], ['noticias', 'Noticias'], ['equipo', 'Equipo'], ['contacto', 'Contacto']]
+      <ul class="menu" id="menu">${[['inicio', 'Inicio'], ['biografia', 'Biografía'], ['experiencia', 'Experiencia'], ['propuestas', 'Propuestas'], ['noticias', 'Noticias'], ['galeria', 'Galería'], ['contacto', 'Contacto']]
       .map(([h, t]) => `<li><a href="${h === 'contacto' ? '#contacto' : ROOT + '#' + h}">${t}</a></li>`).join('')}<li><a href="#participa" class="btn btn-y sm">Participa</a></li></ul>
     </div></header>`;
 
@@ -91,6 +91,12 @@
   const teamStrip = list => list.length ? `<div class="marquee" aria-label="Equipo de trabajo"><div class="mq-track">${list.map(t => `<figure class="member">${pic(t.photo, t.name, 'member-img')}<figcaption><b>${esc(t.name)}</b>${t.role ? `<span>${esc(t.role)}</span>` : ''}${t.parish ? `<small>${esc(parishNames[t.parish])}</small>` : ''}</figcaption></figure>`).join('')}</div></div>`
     : '<div class="wrap"><p class="muted empty">Pronto presentaremos a nuestro equipo.</p></div>';
 
+  const galStrip = list => {
+    if (!list.length) return '<div class="wrap"><p class="muted empty">Pronto compartiremos fotografías de la campaña.</p></div>';
+    const items = list.map(i => `<a class="shot" href="${esc(src(i.image))}" data-lb data-cap="${esc((i.title || '') + (i.caption ? ' — ' + i.caption : ''))}">${pic(i.image, i.title || 'Galería', 'shot-img')}${i.title || i.parish ? `<span class="shot-t">${i.title ? `<b>${esc(i.title)}</b>` : ''}${i.parish ? `<small>${esc(parishNames[i.parish])}</small>` : ''}</span>` : ''}</a>`).join('');
+    return list.length < 4 ? `<div class="wrap shots">${items}</div>` : `<div class="marquee" aria-label="Galería"><div class="mq-track">${items}</div></div>`;
+  };
+
   const form = () => sec('purple', 'participa', `<div class="wrap part"><div class="rv"><span class="eyebrow y">Tu voz cuenta</span><h2 class="ttl">${esc(s.participa_title)}</h2><p class="lead">${esc(s.participa_intro)}</p>
       <ul class="checks"><li>Todos los datos personales son opcionales.</li><li>Tu información es confidencial y solo la ve el equipo de campaña.</li><li>Las ideas se publican únicamente tras ser revisadas y sin datos personales.</li></ul></div>
     <form class="pform rv d2" novalidate>
@@ -119,7 +125,7 @@
       + sec('', 'propuestas', `<div class="wrap">${pillars.length ? head('Plan Contigo', s.plan_title, s.plan_intro) + plan() + `<h3 class="sub-ttl rv">${esc(s.proposals_title)}</h3>` : head('Plan de trabajo', s.proposals_title, s.proposals_intro)}<div class="chips rv"><button class="chip on" data-f="">Del cantón</button>${parishes.map(p => `<button class="chip" data-f="${p.slug}">${esc(p.name)}</button>`).join('')}<button class="chip" data-f="*">Todas</button></div>${propsGrid(of('proposals'))}</div>`)
       + sec('purple', 'parroquias', `<div class="wrap">${head('Territorio', 'Nuestras parroquias', 'Propuestas, comunidades y fotografías de cada rincón del cantón.', true)}<div class="pgrid">${parishes.map(p => `<a class="pcard rv" href="${href('parroquia/' + p.slug + '/')}">${pic(p.cover, p.name, 'pcard-img')}<span class="pcard-t"><b>${esc(p.name)}</b><small>${esc(p.tagline || 'Ver propuestas y comunidades')} →</small></span></a>`).join('')}</div></div>`)
       + sec('', 'noticias', `<div class="wrap">${head('Agenda', s.news_title, s.news_intro)}${newsGrid(news().slice(0, 12))}</div>`)
-      + sec('alt', 'equipo', `<div class="wrap">${head('Juntas parroquiales', s.team_title, s.team_intro)}</div>${teamStrip(of('team'))}`)
+      + sec('alt', 'galeria', `<div class="wrap">${head('Galería', s.gallery_title || 'Nuestra campaña en imágenes', s.gallery_intro)}</div>${galStrip(of('gallery'))}`)
       + (ideas.length ? sec('', 'voces', `<div class="wrap">${head('Voces ciudadanas', 'Lo que propone la gente')}<div class="voices">${ideas.map(i => `<blockquote class="voice rv"><p>“${esc(i.message.length > 260 ? i.message.slice(0, 257) + '…' : i.message)}”</p><footer>${esc(i.category || 'Aporte ciudadano')}${i.parish ? ' · ' + esc(parishNames[i.parish]) : ''}</footer></blockquote>`).join('')}</div></div>`) : '')
       + form();
   }
