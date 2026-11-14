@@ -80,6 +80,16 @@
   const socCover = (sc, image, alt, cls) => image ? pic(image, alt, cls) : `<div class="${cls} soc-ph soc-${sc.net}" aria-hidden="true"><b>${sc.name}</b></div>`;
   const socLink = (sc, cls, inner) => `<a class="${cls} soc" href="${esc(sc.url)}" target="_blank" rel="noopener" draggable="false">${inner}</a>`;
 
+  // Comunidad: foto, y si tiene enlace de video, la portada lleva a la publicación (YouTube se abre en el visor).
+  const commCard = c => {
+    const id = yt(c.video_url), sc = !id ? social(c.video_url) : null, other = !id && !sc ? safeUrl(c.video_url) : '';
+    const media = sc ? socLink(sc, 'card-img-wrap', socCover(sc, c.image, c.name, 'card-img'))
+      : id ? `<a class="card-img-wrap is-vid" href="https://www.youtube.com/watch?v=${id}" data-lb data-yt="${id}" data-cap="${esc(c.name)}">${c.image ? pic(c.image, c.name, 'card-img') : `<img class="card-img" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="${esc(c.name)}" loading="lazy">`}<span class="play" aria-hidden="true"></span></a>`
+      : other ? `<a class="card-img-wrap" href="${esc(other)}" target="_blank" rel="noopener">${pic(c.image, c.name, 'card-img')}</a>` : pic(c.image, c.name, 'card-img');
+    const more = sc ? `<a class="more" href="${esc(sc.url)}" target="_blank" rel="noopener">Ver en ${sc.name} ↗</a>` : other ? `<a class="more" href="${esc(other)}" target="_blank" rel="noopener">▶ Ver video ↗</a>` : '';
+    return `<article class="card rv">${media}<div class="card-b"><h3>${esc(c.name)}</h3>${c.description ? `<div class="prose sm">${paras(c.description)}</div>` : ''}${more}</div></article>`;
+  };
+
   const newsGrid = list => `<div class="grid3">${list.map(n => {
     const vid = yt(n.video_url), link = safeUrl(n.link), sc = !vid ? social(n.video_url) || social(n.link) : null;
     let media = '';
@@ -155,7 +165,7 @@
         <div class="wrap phero-in intro"><a href="${ROOT}#parroquias" class="back">← Todas las parroquias</a><span class="kicker">Parroquia</span><h1>${esc(p.name)}</h1>${p.tagline ? `<p class="lead">${esc(p.tagline)}</p>` : ''}</div>${seal()}</section>`
       + sec('', '', `<div class="wrap pinfo"><div class="rv"><span class="eyebrow">Conoce ${esc(p.name)}</span><div class="prose">${paras(p.description)}</div></div>${fx.length ? `<dl class="facts rv d2">${fx.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</div>`)
       + sec('alt', 'propuestas', `<div class="wrap">${head('Plan de trabajo', 'Propuestas para ' + p.name)}${propsGrid(of('proposals', slug))}</div>`)
-      + (comm.length ? sec('', '', `<div class="wrap">${head('Territorio', 'Comunidades')}<div class="grid3">${comm.map(c => `<article class="card rv">${pic(c.image, c.name, 'card-img')}<div class="card-b"><h3>${esc(c.name)}</h3>${c.description ? `<div class="prose sm">${paras(c.description)}</div>` : ''}</div></article>`).join('')}</div></div>`) : '')
+      + (comm.length ? sec('', '', `<div class="wrap">${head('Territorio', 'Comunidades')}<div class="grid3">${comm.map(commCard).join('')}</div></div>`) : '')
       + (gal.length ? sec('alt', '', `<div class="wrap">${head('Galería', p.name + ' en imágenes y videos')}<div class="gal">${gal.map(i => galItem(i, 'gal-i rv')).join('')}</div></div>`) : '')
       + (team.length ? sec('', 'equipo', `<div class="wrap">${head('Junta parroquial', 'Nuestro equipo en ' + p.name)}${team.map(t => `<a class="teamfull rv" href="${esc(src(t.photo))}" data-lb data-cap="${esc([t.name, t.role].filter(Boolean).join(' · '))}"><img src="${esc(src(t.photo))}" alt="${esc('Equipo de ' + p.name)}" loading="lazy" decoding="async"><span>🔍 Ampliar</span></a>`).join('')}</div>`) : '')
       + (nw.length ? sec('alt', 'noticias', `<div class="wrap">${head('Agenda', 'Actividades en ' + p.name)}${newsGrid(nw)}</div>`) : '')
