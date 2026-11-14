@@ -191,7 +191,7 @@
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
   $$('.rv').forEach(el => io.observe(el));
 
-  // Propuestas de la portada en páginas deslizables: 6 por página en computadora, 4 en celular.
+  // Propuestas de la portada en páginas deslizables: 6 por página en computadora, 2 en celular.
   let propFilter = null;
   const pool = $('#propuestas .props');
   if (pool) {
@@ -205,7 +205,7 @@
     const sync = () => { const i = page(), n = view.children.length; [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i)); $('.prev', box).disabled = i <= 0; $('.next', box).disabled = i >= n - 1; };
     const go = i => { view.scrollTo({ left: Math.max(0, i) * view.clientWidth, behavior: 'smooth' }); };
     const build = () => {
-      const per = mq.matches ? 4 : 6, list = cards.filter(c => f === '*' || c.dataset.parish === f);
+      const per = mq.matches ? 2 : 6, list = cards.filter(c => f === '*' || c.dataset.parish === f);
       view.replaceChildren();
       for (let i = 0; i < list.length; i += per) { const pg = document.createElement('div'); pg.className = 'pg-page grid3 props'; pg.append(...list.slice(i, i + per)); view.append(pg); }
       if (!list.length) view.innerHTML = '<p class="muted empty">Aún no hay propuestas en esta sección.</p>';
