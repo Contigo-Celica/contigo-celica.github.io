@@ -21,7 +21,10 @@
   const of = (k, p) => items.filter(i => i.kind === k && (p === undefined || i.parish === p));
   const pmap = Object.fromEntries(of('parishes').map(p => [p.slug, p]));
   const parishes = window.APP.schema.parishes.map(([sl]) => pmap[sl]).filter(Boolean);
-  const news = p => of('news', p).sort((a, b) => (b.date || b.created).localeCompare(a.date || a.created));
+  const byDate = (a, b) => (b.date || b.created || '').localeCompare(a.date || a.created || '');
+  const news = p => of('news', p).sort(byDate);
+  // Portada: las noticias y también lo que se publica en Comunidades, del más reciente al más antiguo.
+  const feed = () => [...of('news'), ...of('communities').map(c => ({ title: c.name, summary: c.description, image: c.image, video_url: c.video_url, parish: c.parish, created: c.created, tag: 'Comunidad' }))].sort(byDate);
   const cats = (s.categories || '').split('\n').map(c => c.trim()).filter(Boolean);
   const href = p => ROOT + p;
   const pillars = of('pillars');
@@ -98,7 +101,7 @@
     else if (sc) media = socLink(sc, 'card-img-wrap', socCover(sc, n.image, n.title, 'card-img'), n.title);
     else if (n.image) media = link ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="imglink">${pic(n.image, n.title, 'card-img')}<span class="go">Ver más ↗</span></a>` : pic(n.image, n.title, 'card-img');
     const d = n.date ? `${n.date.slice(8, 10)}/${n.date.slice(5, 7)}/${n.date.slice(0, 4)}` : '';
-    return `<article class="card news rv">${media}<div class="card-b"><div class="tags">${d ? `<span class="tag">${d}</span>` : ''}${n.parish ? `<span class="tag t2">${esc(parishNames[n.parish])}</span>` : ''}</div>
+    return `<article class="card news rv">${media}<div class="card-b"><div class="tags">${n.tag ? `<span class="tag">${esc(n.tag)}</span>` : ''}${d ? `<span class="tag">${d}</span>` : ''}${n.parish ? `<span class="tag t2">${esc(parishNames[n.parish])}</span>` : ''}</div>
       <h3>${esc(n.title)}</h3>${n.summary ? `<p>${esc(n.summary)}</p>` : ''}
       ${sc ? `<a class="more" href="${esc(sc.url)}" target="_blank" rel="noopener">Ver en ${sc.name} ↗</a>` : n.video_url && !vid && safeUrl(n.video_url) ? `<a class="more" href="${esc(n.video_url)}" target="_blank" rel="noopener">▶ Ver video</a>` : link ? `<a class="more" href="${esc(link)}" target="_blank" rel="noopener">Leer más ↗</a>` : ''}</div></article>`;
   }).join('') || '<p class="muted empty">Pronto compartiremos nuestras actividades.</p>'}</div>`;
@@ -151,7 +154,7 @@
       + sec('purple', 'galeria', `<div class="wrap">${head('Galería', s.gallery_title || 'Nuestra campaña en imágenes', s.gallery_intro, true)}</div>${galStrip(of('gallery'))}`)
       + sec('', 'propuestas', `<div class="wrap">${pillars.length ? head('Plan Contigo', s.plan_title, s.plan_intro) + plan() + `<h3 class="sub-ttl rv">${esc(s.proposals_title)}</h3>` : head('Plan de trabajo', s.proposals_title, s.proposals_intro)}<div class="chips rv"><button class="chip on" data-f="">Del cantón</button>${parishes.map(p => `<button class="chip" data-f="${p.slug}">${esc(p.name)}</button>`).join('')}<button class="chip" data-f="*">Todas</button></div>${propsGrid(of('proposals'))}</div>`)
       + sec('purple', 'parroquias', `<div class="wrap">${head('Territorio', 'Nuestras parroquias', 'Propuestas, comunidades y fotografías de cada rincón del cantón.', true)}<div class="pgrid">${parishes.map(p => `<a class="pcard rv" href="${href('parroquia/' + p.slug + '/')}">${pic(p.cover, p.name, 'pcard-img')}<span class="pcard-t"><b>${esc(p.name)}</b><small>${esc(p.tagline || 'Ver propuestas y comunidades')} →</small></span></a>`).join('')}</div></div>`)
-      + sec('', 'noticias', `<div class="wrap">${head('Agenda', s.news_title, s.news_intro)}${newsGrid(news().slice(0, 12))}</div>`)
+      + sec('', 'noticias', `<div class="wrap">${head('Agenda', s.news_title, s.news_intro)}${newsGrid(feed().slice(0, 12))}</div>`)
       + (ideas.length ? sec('', 'voces', `<div class="wrap">${head('Voces ciudadanas', 'Lo que propone la gente')}<div class="voices">${ideas.map(i => `<blockquote class="voice rv"><p>“${esc(i.message.length > 260 ? i.message.slice(0, 257) + '…' : i.message)}”</p><footer>${esc(i.category || 'Aporte ciudadano')}${i.parish ? ' · ' + esc(parishNames[i.parish]) : ''}</footer></blockquote>`).join('')}</div></div>`) : '')
       + form();
   }
