@@ -93,6 +93,8 @@
     return `<article class="card rv">${media}<div class="card-b"><h3>${esc(c.name)}</h3>${c.description ? `<div class="prose sm">${paras(c.description)}</div>` : ''}${more}</div></article>`;
   };
 
+  // Filtros por territorio de la portada (propuestas y noticias).
+  const chips = () => '<div class="chips rv"><button class="chip on" data-f="">Del cantón</button>' + parishes.map(p => `<button class="chip" data-f="${p.slug}">${esc(p.name)}</button>`).join('') + '<button class="chip" data-f="*">Todas</button></div>';
   const newsGrid = list => `<div class="grid3">${list.map(n => {
     const vid = yt(n.video_url), link = safeUrl(n.link), sc = !vid ? social(n.video_url) || social(n.link) : null;
     let media = '';
@@ -101,7 +103,7 @@
     else if (sc) media = socLink(sc, 'card-img-wrap', socCover(sc, n.image, n.title, 'card-img'), n.title);
     else if (n.image) media = link ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="imglink">${pic(n.image, n.title, 'card-img')}<span class="go">Ver más ↗</span></a>` : pic(n.image, n.title, 'card-img');
     const d = n.date ? `${n.date.slice(8, 10)}/${n.date.slice(5, 7)}/${n.date.slice(0, 4)}` : '';
-    return `<article class="card news rv">${media}<div class="card-b"><div class="tags">${n.tag ? `<span class="tag">${esc(n.tag)}</span>` : ''}${d ? `<span class="tag">${d}</span>` : ''}${n.parish ? `<span class="tag t2">${esc(parishNames[n.parish])}</span>` : ''}</div>
+    return `<article class="card news rv" data-parish="${esc(n.parish || '')}">${media}<div class="card-b"><div class="tags">${n.tag ? `<span class="tag">${esc(n.tag)}</span>` : ''}${d ? `<span class="tag">${d}</span>` : ''}${n.parish ? `<span class="tag t2">${esc(parishNames[n.parish])}</span>` : ''}</div>
       <h3>${esc(n.title)}</h3>${n.summary ? `<p>${esc(n.summary)}</p>` : ''}
       ${sc ? `<a class="more" href="${esc(sc.url)}" target="_blank" rel="noopener">Ver en ${sc.name} ↗</a>` : n.video_url && !vid && safeUrl(n.video_url) ? `<a class="more" href="${esc(n.video_url)}" target="_blank" rel="noopener">▶ Ver video</a>` : link ? `<a class="more" href="${esc(link)}" target="_blank" rel="noopener">Leer más ↗</a>` : ''}</div></article>`;
   }).join('') || '<p class="muted empty">Pronto compartiremos nuestras actividades.</p>'}</div>`;
@@ -152,9 +154,9 @@
       + sec('', 'biografia', `<div class="wrap bio"><div class="bio-pic rv">${pic(s.bio_photo, s.candidate_name, 'bio-img', true)}</div><div class="rv d2"><span class="eyebrow">Conóceme</span><h2 class="ttl">${esc(s.bio_title)}</h2><div class="prose">${paras(s.bio_text)}</div></div></div>`)
       + sec('alt', 'experiencia', `<div class="wrap">${head('Trayectoria', s.exp_title, s.exp_intro)}<div class="exp">${tl(form_, 'Formación académica')}${tl(tray, 'Trayectoria institucional')}</div></div>`)
       + sec('purple', 'galeria', `<div class="wrap">${head('Galería', s.gallery_title || 'Nuestra campaña en imágenes', s.gallery_intro, true)}</div>${galStrip(of('gallery'))}`)
-      + sec('', 'propuestas', `<div class="wrap">${pillars.length ? head('Plan Contigo', s.plan_title, s.plan_intro) + plan() + `<h3 class="sub-ttl rv">${esc(s.proposals_title)}</h3>` : head('Plan de trabajo', s.proposals_title, s.proposals_intro)}<div class="chips rv"><button class="chip on" data-f="">Del cantón</button>${parishes.map(p => `<button class="chip" data-f="${p.slug}">${esc(p.name)}</button>`).join('')}<button class="chip" data-f="*">Todas</button></div>${propsGrid(of('proposals'))}</div>`)
+      + sec('', 'propuestas', `<div class="wrap">${pillars.length ? head('Plan Contigo', s.plan_title, s.plan_intro) + plan() + `<h3 class="sub-ttl rv">${esc(s.proposals_title)}</h3>` : head('Plan de trabajo', s.proposals_title, s.proposals_intro)}${chips()}${propsGrid(of('proposals'))}</div>`)
       + sec('purple', 'parroquias', `<div class="wrap">${head('Territorio', 'Nuestras parroquias', 'Propuestas, comunidades y fotografías de cada rincón del cantón.', true)}<div class="pgrid">${parishes.map(p => `<a class="pcard rv" href="${href('parroquia/' + p.slug + '/')}">${pic(p.cover, p.name, 'pcard-img')}<span class="pcard-t"><b>${esc(p.name)}</b><small>${esc(p.tagline || 'Ver propuestas y comunidades')} →</small></span></a>`).join('')}</div></div>`)
-      + sec('', 'noticias', `<div class="wrap">${head('Agenda', s.news_title, s.news_intro)}${newsGrid(feed().slice(0, 12))}</div>`)
+      + sec('', 'noticias', `<div class="wrap">${head('Agenda', s.news_title, s.news_intro)}${chips()}${newsGrid(feed())}</div>`)
       + (ideas.length ? sec('', 'voces', `<div class="wrap">${head('Voces ciudadanas', 'Lo que propone la gente')}<div class="voices">${ideas.map(i => `<blockquote class="voice rv"><p>“${esc(i.message.length > 260 ? i.message.slice(0, 257) + '…' : i.message)}”</p><footer>${esc(i.category || 'Aporte ciudadano')}${i.parish ? ' · ' + esc(parishNames[i.parish]) : ''}</footer></blockquote>`).join('')}</div></div>`) : '')
       + form();
   }
@@ -204,13 +206,14 @@
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
   $$('.rv').forEach(el => io.observe(el));
 
-  // Propuestas de la portada en páginas deslizables: 6 por página en computadora, 2 en celular.
-  let propFilter = null;
-  const pool = $('#propuestas .chips') && $('#propuestas .props'); // solo en la portada (la que tiene filtros)
-  if (pool) {
-    const cards = [...pool.querySelectorAll('.prop')], mq = matchMedia('(max-width:700px)');
+  // Propuestas y noticias de la portada en páginas deslizables (6 por página en computadora, 2 en celular),
+  // filtradas por "Del cantón", cada parroquia o "Todas".
+  const mq = matchMedia('(max-width:700px)');
+  const pager = (sel, cardSel, label, emptyMsg) => {
+    const pool = $(sel); if (!pool) return null;
+    const cards = [...pool.querySelectorAll(cardSel)], cls = pool.className.replace(/\brv\b/g, '').trim();
     const box = document.createElement('div'); box.className = 'pager';
-    box.innerHTML = '<div class="pg-view" tabindex="0" aria-label="Propuestas"></div><div class="pg-nav"><button type="button" class="pg-btn prev" aria-label="Propuestas anteriores">‹</button><span class="pg-dots"></span><button type="button" class="pg-btn next" aria-label="Más propuestas">›</button></div>';
+    box.innerHTML = `<div class="pg-view" tabindex="0" aria-label="${label}"></div><div class="pg-nav"><button type="button" class="pg-btn prev" aria-label="Anteriores">‹</button><span class="pg-dots"></span><button type="button" class="pg-btn next" aria-label="Siguientes">›</button></div>`;
     pool.replaceWith(box);
     const view = $('.pg-view', box), dots = $('.pg-dots', box), nav = $('.pg-nav', box);
     let f = '';
@@ -220,8 +223,8 @@
     const build = () => {
       const per = mq.matches ? 2 : 6, list = cards.filter(c => f === '*' || c.dataset.parish === f);
       view.replaceChildren();
-      for (let i = 0; i < list.length; i += per) { const pg = document.createElement('div'); pg.className = 'pg-page grid3 props'; pg.append(...list.slice(i, i + per)); view.append(pg); }
-      if (!list.length) view.innerHTML = '<p class="muted empty">Aún no hay propuestas en esta sección.</p>';
+      for (let i = 0; i < list.length; i += per) { const pg = document.createElement('div'); pg.className = 'pg-page ' + cls; pg.append(...list.slice(i, i + per)); view.append(pg); }
+      if (!list.length) view.innerHTML = `<p class="muted empty">${emptyMsg}</p>`;
       const n = list.length ? view.children.length : 0;
       dots.innerHTML = Array.from({ length: n }, (_, k) => `<button type="button" aria-label="Página ${k + 1}"></button>`).join('');
       nav.hidden = n < 2; view.scrollLeft = 0; sync();
@@ -232,15 +235,22 @@
     $('.next', box).onclick = () => go(page() + 1);
     view.addEventListener('keydown', e => { if (e.key === 'ArrowRight') go(page() + 1); if (e.key === 'ArrowLeft') go(page() - 1); });
     mq.addEventListener('change', build);
-    propFilter = v => { f = v; build(); };
-  }
-
-  $$('.chip').forEach(c => c.addEventListener('click', () => {
-    $$('.chip').forEach(x => x.classList.toggle('on', x === c));
-    if (propFilter) return propFilter(c.dataset.f);
-    $$('.prop').forEach(p => p.classList.toggle('hide', c.dataset.f !== '*' && p.dataset.parish !== c.dataset.f));
-  }));
-  $('.chips .chip.on')?.click();
+    return v => { f = v; build(); };
+  };
+  // Solo en la portada (las secciones que tienen filtros).
+  const filters = {
+    propuestas: $('#propuestas .chips') && pager('#propuestas .props', '.prop', 'Propuestas', 'Aún no hay propuestas en esta sección.'),
+    noticias: $('#noticias .chips') && pager('#noticias .grid3', '.news', 'Noticias y actividades', 'Aún no hay noticias ni actividades en esta sección.'),
+  };
+  $$('.chips').forEach(box => {
+    const fn = filters[box.closest('section')?.id];
+    $$('.chip', box).forEach(c => c.addEventListener('click', () => {
+      $$('.chip', box).forEach(x => x.classList.toggle('on', x === c));
+      if (fn) return fn(c.dataset.f);
+      $$('.prop', box.parentElement).forEach(p => p.classList.toggle('hide', c.dataset.f !== '*' && p.dataset.parish !== c.dataset.f));
+    }));
+    $('.chip.on', box)?.click();
+  });
 
   $$('.mq-track').forEach(t => {
     const items = [...t.children];
