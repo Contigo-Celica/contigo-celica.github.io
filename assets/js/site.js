@@ -191,8 +191,40 @@
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
   $$('.rv').forEach(el => io.observe(el));
 
+  // Propuestas de la portada en páginas deslizables: 6 por página en computadora, 4 en celular.
+  let propFilter = null;
+  const pool = $('#propuestas .props');
+  if (pool) {
+    const cards = [...pool.querySelectorAll('.prop')], mq = matchMedia('(max-width:700px)');
+    const box = document.createElement('div'); box.className = 'pager';
+    box.innerHTML = '<div class="pg-view" tabindex="0" aria-label="Propuestas"></div><div class="pg-nav"><button type="button" class="pg-btn prev" aria-label="Propuestas anteriores">‹</button><span class="pg-dots"></span><button type="button" class="pg-btn next" aria-label="Más propuestas">›</button></div>';
+    pool.replaceWith(box);
+    const view = $('.pg-view', box), dots = $('.pg-dots', box), nav = $('.pg-nav', box);
+    let f = '';
+    const page = () => Math.round(view.scrollLeft / (view.clientWidth || 1));
+    const sync = () => { const i = page(), n = view.children.length; [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i)); $('.prev', box).disabled = i <= 0; $('.next', box).disabled = i >= n - 1; };
+    const go = i => { view.scrollTo({ left: Math.max(0, i) * view.clientWidth, behavior: 'smooth' }); };
+    const build = () => {
+      const per = mq.matches ? 4 : 6, list = cards.filter(c => f === '*' || c.dataset.parish === f);
+      view.replaceChildren();
+      for (let i = 0; i < list.length; i += per) { const pg = document.createElement('div'); pg.className = 'pg-page grid3 props'; pg.append(...list.slice(i, i + per)); view.append(pg); }
+      if (!list.length) view.innerHTML = '<p class="muted empty">Aún no hay propuestas en esta sección.</p>';
+      const n = list.length ? view.children.length : 0;
+      dots.innerHTML = Array.from({ length: n }, (_, k) => `<button type="button" aria-label="Página ${k + 1}"></button>`).join('');
+      nav.hidden = n < 2; view.scrollLeft = 0; sync();
+    };
+    view.addEventListener('scroll', () => requestAnimationFrame(sync), { passive: true });
+    dots.addEventListener('click', e => { const k = [...dots.children].indexOf(e.target); if (k >= 0) go(k); });
+    $('.prev', box).onclick = () => go(page() - 1);
+    $('.next', box).onclick = () => go(page() + 1);
+    view.addEventListener('keydown', e => { if (e.key === 'ArrowRight') go(page() + 1); if (e.key === 'ArrowLeft') go(page() - 1); });
+    mq.addEventListener('change', build);
+    propFilter = v => { f = v; build(); };
+  }
+
   $$('.chip').forEach(c => c.addEventListener('click', () => {
     $$('.chip').forEach(x => x.classList.toggle('on', x === c));
+    if (propFilter) return propFilter(c.dataset.f);
     $$('.prop').forEach(p => p.classList.toggle('hide', c.dataset.f !== '*' && p.dataset.parish !== c.dataset.f));
   }));
   $('.chips .chip.on')?.click();
