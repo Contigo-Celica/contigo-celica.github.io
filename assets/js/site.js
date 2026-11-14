@@ -193,7 +193,7 @@
 
   // Propuestas de la portada en páginas deslizables: 6 por página en computadora, 2 en celular.
   let propFilter = null;
-  const pool = $('#propuestas .props');
+  const pool = $('#propuestas .chips') && $('#propuestas .props'); // solo en la portada (la que tiene filtros)
   if (pool) {
     const cards = [...pool.querySelectorAll('.prop')], mq = matchMedia('(max-width:700px)');
     const box = document.createElement('div'); box.className = 'pager';
