@@ -232,7 +232,7 @@
     const imgOf = it => it.image || it.photo || it.cover || it.sub1_image || '';
     const draw = flt => {
       $('.list', view).innerHTML = items.filter(it => !flt || it.status === flt).map(it => `<div class="row">${imgOf(it) ? `<img src="${esc(src(imgOf(it)))}" alt="" loading="lazy">` : '<div class="noimg"></div>'}
-        <div><h3>${esc(it[c.title] || '(sin título)')}<span class="st ${it.status}">${it.status}</span></h3><small>${[it.parish !== undefined ? pname(it.parish) : '', it.category, it.date, it.role, it.period].filter(Boolean).map(esc).join(' · ')} · Orden ${it.sort}</small></div>
+        <div><h3>${esc(it[c.title] || '(sin título)')}<span class="st ${it.status}">${it.status}</span></h3><small>${[it.parish !== undefined ? pname(it.parish) : '', it.category, it.date, it.role, it.period].filter(Boolean).map(esc).join(' · ')} · Orden ${it.sort} · N.º ${it.id}</small></div>
         <div class="acts">${isAdmin() && it.status !== 'publicado' ? `<button class="btn sm ok" data-st="publicado" data-id="${it.id}">Aprobar</button>` : ''}${isAdmin() && it.status !== 'rechazado' && !c.fixed ? `<button class="btn sm g" data-st="rechazado" data-id="${it.id}">Rechazar</button>` : ''}
         <a class="btn sm" href="#/c/${kind}/${it.id}">Editar</a>${isAdmin() && !c.fixed ? `<button class="btn sm bad" data-del="${it.id}">Eliminar</button>` : ''}</div></div>`).join('') || '<p class="muted panel">No hay elementos todavía.</p>';
     };

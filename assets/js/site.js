@@ -83,10 +83,14 @@
   const safeDoc = u => !!u && (/^assets\//.test(u) || !!safeUrl(u));
   // Propuestas: tarjeta compacta; al tocarla se abre completa en un recuadro sobre fondo difuminado.
   const propTags = x => `<div class="tags">${x.category ? `<span class="tag">${esc(x.category)}</span>` : ''}<span class="tag t2">${esc(parishNames[x.parish] || 'Todo el cantón')}</span></div>`;
-  const propsGrid = list => `<div class="grid3 props">${list.map(x => { const hasDoc = safeDoc(x.doc) || safeDoc(x.doc2); return `<article class="card prop rv" data-parish="${esc(x.parish || '')}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="Leer la propuesta: ${esc(x.title)}">
+  // Propuestas relacionadas: enlaces que abren la otra propuesta (en esta página o en la portada).
+  const pById = Object.fromEntries(of('proposals').map(x => [x.id, x]));
+  const relLinks = x => { const r = [...new Set(String(x.rel || '').split(/[^\d]+/).filter(Boolean))].map(n => pById[n]).filter(o => o && o.id !== x.id);
+    return r.length ? `<div class="rel"><b>Propuestas relacionadas</b>${r.map(o => `<a class="rel-a" data-p="${o.id}" href="${esc(href('#p-' + o.id))}"><small>${esc(parishNames[o.parish] || 'Todo el cantón')}</small>${esc(o.title)} →</a>`).join('')}</div>` : ''; };
+  const propsGrid = list => `<div class="grid3 props">${list.map(x => { const hasDoc = safeDoc(x.doc) || safeDoc(x.doc2); return `<article class="card prop rv" data-id="${x.id}" data-parish="${esc(x.parish || '')}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="Leer la propuesta: ${esc(x.title)}">
       ${x.image ? pic(x.image, x.title, 'card-img') : ''}<div class="card-b">${propTags(x)}
       <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}<span class="prop-more">${hasDoc ? '📄 Incluye proyecto completo · ' : ''}Leer propuesta completa →</span></div>
-      <template class="prop-full">${x.image ? `<div class="pm-img">${pic(x.image, x.title, '', true)}</div>` : ''}<div class="pm-b">${propTags(x)}<h3 id="pm-t">${esc(x.title)}</h3>${x.summary ? `<p class="pm-lead">${esc(x.summary)}</p>` : ''}${hasDoc ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<div class="prose">${paras(x.body)}</div>` : ''}</div></template></article>`; }).join('')
+      <template class="prop-full">${x.image ? `<div class="pm-img">${pic(x.image, x.title, '', true)}</div>` : ''}<div class="pm-b">${propTags(x)}<h3 id="pm-t">${esc(x.title)}</h3>${x.summary ? `<p class="pm-lead">${esc(x.summary)}</p>` : ''}${hasDoc ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<div class="prose">${paras(x.body)}</div>` : ''}${relLinks(x)}</div></template></article>`; }).join('')
     || '<p class="muted empty">Muy pronto publicaremos las propuestas.</p>'}</div>`;
 
   // Portada de una publicación de red social: imagen subida o tarjeta con el color de la red.
@@ -174,18 +178,22 @@
   function parish() {
     const p = pmap[slug];
     if (!p) return '<section class="sec"><div class="wrap head"><h1 class="ttl">Parroquia no encontrada</h1></div></section>';
-    document.title = `Parroquia ${p.name} | ${s.site_name}`;
+    const kick = p.kicker || 'Parroquia', own = !!p.kicker;
+    document.title = `${own ? kick : 'Parroquia ' + p.name} | ${s.site_name}`;
     const fx = facts(p.facts), comm = of('communities', slug), gal = of('gallery', slug), team = of('team', slug), nw = news(slug).slice(0, 6);
+    const lead = p.leader_name ? sec('', 'impulsa', `<div class="wrap bio lead-bio">${p.leader_photo ? `<div class="bio-pic rv">${pic(p.leader_photo, p.leader_name, 'bio-img', true)}</div>` : ''}<div class="rv d2"><span class="eyebrow">${esc(p.leader_role || 'Impulsa estas propuestas')}</span><h2 class="ttl">${esc(p.leader_name)}</h2>${p.leader_text ? `<div class="prose">${paras(p.leader_text)}</div>` : ''}<p><a class="btn btn-y" href="#propuestas">Ver las propuestas →</a></p></div></div>`) : '';
+    if (p.banner) return `<section class="phero ban"><div class="wrap ban-in"><a href="${ROOT}#parroquias" class="back">← Todas las parroquias</a></div><img class="phero-ban intro" src="${esc(src(p.banner))}" alt="${esc(kick + ' · ' + p.name)}" fetchpriority="high"><h1 class="vh">${esc(kick)}</h1>${seal()}</section>` + rest();
     return `<section class="phero">${p.cover ? `<img class="phero-img" src="${esc(src(p.cover))}" alt="Parroquia ${esc(p.name)}" fetchpriority="high">` : ''}
-        <div class="wrap phero-in intro"><a href="${ROOT}#parroquias" class="back">← Todas las parroquias</a><span class="kicker">Parroquia</span><h1>${esc(p.name)}</h1>${p.tagline ? `<p class="lead">${esc(p.tagline)}</p>` : ''}</div>${seal()}</section>`
-      + sec('', '', `<div class="wrap pinfo"><div class="rv"><span class="eyebrow">Conoce ${esc(p.name)}</span><div class="prose">${paras(p.description)}</div></div>${fx.length ? `<dl class="facts rv d2">${fx.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</div>`)
-      + sec('alt', 'propuestas', `<div class="wrap">${head('Plan de trabajo', 'Propuestas para ' + p.name)}${propsGrid(of('proposals', slug))}</div>`)
+        <div class="wrap phero-in intro"><a href="${ROOT}#parroquias" class="back">← Todas las parroquias</a><span class="kicker">${esc(kick)}</span><h1>${esc(p.name)}</h1>${p.tagline ? `<p class="lead">${esc(p.tagline)}</p>` : ''}</div>${seal()}</section>` + rest();
+    function rest() { return sec('', '', `<div class="wrap pinfo"><div class="rv"><span class="eyebrow">Conoce ${own ? 'el ' : ''}${esc(p.name)}</span>${own && p.tagline ? `<h2 class="ttl">${esc(p.tagline)}</h2>` : ''}<div class="prose">${paras(p.description)}</div></div>${fx.length ? `<dl class="facts rv d2">${fx.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</div>`)
+      + lead
+      + sec('alt', 'propuestas', `<div class="wrap">${head('Plan de trabajo', (own ? 'Propuestas del ' : 'Propuestas para ') + p.name)}${propsGrid(of('proposals', slug))}</div>`)
       + (pillars.length ? sec('', 'plan', `<div class="wrap">${head('Plan Contigo', 'Conoce los 4 ejes')}<div class="plan-mini">${pillars.map((o, i) => `<a class="pillar-mini c-${esc(o.color || 'azul')}" href="${href('eje/' + o.slug + '/')}"><b>${i + 1}.</b> ${esc(o.title)} →</a>`).join('')}</div></div>`) : '')
       + (comm.length ? sec('', '', `<div class="wrap">${head('Territorio', 'Comunidades')}<div class="grid3">${comm.map(commCard).join('')}</div></div>`) : '')
       + (gal.length ? sec('alt', '', `<div class="wrap">${head('Galería', p.name + ' en imágenes y videos')}<div class="gal">${gal.map(i => galItem(i, 'gal-i rv')).join('')}</div></div>`) : '')
-      + (team.length ? sec('', 'equipo', `<div class="wrap">${head('Junta parroquial', 'Nuestro equipo en ' + p.name)}${team.map(t => `<a class="teamfull rv" href="${esc(src(t.photo))}" data-lb data-cap="${esc([t.name, t.role].filter(Boolean).join(' · '))}"><img src="${esc(src(t.photo))}" alt="${esc('Equipo de ' + p.name)}" loading="lazy" decoding="async"><span>🔍 Ampliar</span></a>`).join('')}</div>`) : '')
+      + (team.length ? sec('', 'equipo', `<div class="wrap">${head(own ? 'Equipo' : 'Junta parroquial', 'Nuestro equipo en ' + p.name)}${team.map(t => `<a class="teamfull rv" href="${esc(src(t.photo))}" data-lb data-cap="${esc([t.name, t.role].filter(Boolean).join(' · '))}"><img src="${esc(src(t.photo))}" alt="${esc('Equipo de ' + p.name)}" loading="lazy" decoding="async"><span>🔍 Ampliar</span></a>`).join('')}</div>`) : '')
       + (nw.length ? sec('alt', 'noticias', `<div class="wrap">${head('Agenda', 'Actividades en ' + p.name)}${newsGrid(nw)}</div>`) : '')
-      + form();
+      + form(); }
   }
 
 
@@ -248,6 +256,7 @@
     mq.addEventListener('change', build);
     return v => { f = v; build(); };
   };
+  const pmCards = Object.fromEntries($$('.prop[data-id]').map(c => [c.dataset.id, c]));
   // Solo en la portada (las secciones que tienen filtros).
   const filters = {
     propuestas: $('#propuestas .chips') && pager('#propuestas .props', '.prop', 'Propuestas', 'Aún no hay propuestas en esta sección.'),
@@ -297,7 +306,13 @@
     if (e.key === 'Escape') return pmClose();
     if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('prop')) { e.preventDefault(); pmOpen(e.target); }
   });
-  pm.addEventListener('click', e => { if (e.target === pm || e.target.closest('.pm-x')) pmClose(); });
+  pm.addEventListener('click', e => {
+    const a = e.target.closest('.rel-a');
+    if (a && pmCards[a.dataset.p]) { e.preventDefault(); pmOpen(pmCards[a.dataset.p]); history.replaceState(null, '', '#p-' + a.dataset.p); return; }
+    if (e.target === pm || e.target.closest('.pm-x')) pmClose();
+  });
+  const pmHash = () => { const m = location.hash.match(/^#p-(\d+)$/); if (m && pmCards[m[1]]) pmOpen(pmCards[m[1]]); };
+  addEventListener('hashchange', pmHash); pmHash();
 
   // Visor: fotos, videos subidos y YouTube. Al cerrar se detiene la reproducción.
   const lb = $('.lb'), lbm = $('.lb-m', lb);
