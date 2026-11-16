@@ -52,7 +52,7 @@
 
   const header = () => `<header class="hdr" id="top">
     <nav class="pbar" aria-label="Parroquias"><div class="wrap pbar-in"><span class="pbar-lbl">Parroquias</span>
-      ${parishes.map(p => `<a href="${href('parroquia/' + p.slug + '/')}" class="pbtn${p.slug === slug ? ' on' : ''}">${esc(p.name)}</a>`).join('')}</div></nav>
+      ${parishes.map(p => `<a href="${href('parroquia/' + p.slug + '/')}" class="pbtn${p.slug === slug ? ' on' : ''}"${p.short ? ` title="${esc(p.name)}"` : ''}>${esc(p.short || p.name)}</a>`).join('')}</div></nav>
     <div class="wrap nav">
       <a href="${ROOT}" class="brand" aria-label="Inicio">${s.logo ? `<img src="${esc(src(s.logo))}" alt="${esc(s.candidate_name)}" width="54" height="54">` : ''}
         <span><b>${esc((s.candidate_name || '').replace('Abg. ', ''))}</b><small>${esc(s.party)} · Alcaldía de Celica</small></span></a>
@@ -190,10 +190,10 @@
     const p = pmap[slug];
     if (!p) return '<section class="sec"><div class="wrap head"><h1 class="ttl">Parroquia no encontrada</h1></div></section>';
     const kick = p.kicker || 'Parroquia', own = !!p.kicker;
-    document.title = `${own ? kick : 'Parroquia ' + p.name} | ${s.site_name}`;
+    document.title = `${own ? p.name : 'Parroquia ' + p.name} | ${s.site_name}`;
     const fx = facts(p.facts), comm = of('communities', slug), gal = of('gallery', slug), team = of('team', slug), nw = news(slug).slice(0, 6);
     const lead = p.leader_name ? sec('', 'impulsa', `<div class="wrap bio lead-bio">${p.leader_photo ? `<div class="bio-pic rv">${pic(p.leader_photo, p.leader_name, 'bio-img', true)}</div>` : ''}<div class="rv d2"><span class="eyebrow">${esc(p.leader_role || 'Impulsa estas propuestas')}</span><h2 class="ttl">${esc(p.leader_name)}</h2>${p.leader_text ? `<div class="prose">${paras(p.leader_text)}</div>` : ''}<p><a class="btn btn-y" href="#propuestas">Ver las propuestas →</a></p></div></div>`) : '';
-    if (p.banner) return `<section class="phero ban"><div class="wrap ban-in"><a href="${ROOT}#parroquias" class="back">← Todas las parroquias</a></div><img class="phero-ban intro" src="${esc(src(p.banner))}" alt="${esc(kick + ' · ' + p.name)}" fetchpriority="high"><h1 class="vh">${esc(kick)}</h1>${seal()}</section>` + rest();
+    if (p.banner) return `<section class="phero ban"><div class="wrap ban-in"><div class="intro"><a href="${ROOT}#parroquias" class="back">← Todas las parroquias</a><span class="kicker">${esc(kick)}</span><h1>${esc(p.name)}</h1>${p.tagline ? `<p class="lead">${esc(p.tagline)}</p>` : ''}</div><img class="phero-ban intro d2" src="${esc(src(p.banner))}" alt="" fetchpriority="high"></div>${seal()}</section>` + rest();
     return `<section class="phero">${p.cover ? `<img class="phero-img" src="${esc(src(p.cover))}" alt="Parroquia ${esc(p.name)}" fetchpriority="high">` : ''}
         <div class="wrap phero-in intro"><a href="${ROOT}#parroquias" class="back">← Todas las parroquias</a><span class="kicker">${esc(kick)}</span><h1>${esc(p.name)}</h1>${p.tagline ? `<p class="lead">${esc(p.tagline)}</p>` : ''}</div>${seal()}</section>` + rest();
     function rest() { return sec('', '', `<div class="wrap pinfo"><div class="rv"><span class="eyebrow">Conoce ${own ? 'el ' : ''}${esc(p.name)}</span>${own && p.tagline ? `<h2 class="ttl">${esc(p.tagline)}</h2>` : ''}<div class="prose">${paras(p.description)}</div></div>${fx.length ? `<dl class="facts rv d2">${fx.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</div>`)
