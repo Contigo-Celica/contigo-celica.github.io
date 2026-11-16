@@ -29,11 +29,12 @@
   const href = p => ROOT + p;
   const pillars = of('pillars');
   const subs = p => [1, 2].filter(n => p['sub' + n + '_title']).map(n => ({ t: p['sub' + n + '_title'], x: p['sub' + n + '_text'], img: p['sub' + n + '_image'] }));
-  const plan = () => pillars.length ? `${s.plan_quote ? `<blockquote class="plan-quote rv">“${esc(s.plan_quote)}”</blockquote>` : ''}<div class="plan rv"><div class="plan-grid">${pillars.map((p, i) => `<a class="pillar c-${esc(p.color || 'azul')}" href="${href('eje/' + p.slug + '/')}">
+  const planGrid = () => `<div class="plan-grid">${pillars.map((p, i) => `<a class="pillar c-${esc(p.color || 'azul')}" href="${href('eje/' + p.slug + '/')}">
       <h3 class="pillar-h"><span>${i + 1}.</span> ${esc(p.title)}</h3>
       <div class="pillar-b">${subs(p).map(u => `<div class="sub"><h4>${esc(u.t)}</h4>${u.img ? `<img src="${esc(src(u.img))}" alt="" loading="lazy">` : ''}<p>${esc(u.x)}</p></div>`).join('')}</div>
       <span class="pillar-more">Conoce más sobre este eje →</span></a>`).join('')}
-      <img class="plan-shield" src="${esc(src('assets/plan/escudo.webp'))}" alt="Plan Contigo" width="150" height="160"></div>
+      <img class="plan-shield" src="${esc(src('assets/plan/escudo.webp'))}" alt="Plan Contigo" width="150" height="160"></div>`;
+  const plan = () => pillars.length ? `${s.plan_quote ? `<blockquote class="plan-quote rv">“${esc(s.plan_quote)}”</blockquote>` : ''}<div class="plan rv">${planGrid()}
     ${s.plan_image ? `<p class="plan-full"><a href="${esc(src(s.plan_image))}" data-lb data-cap="${esc(s.plan_title)}">🔍 Ver infografía completa</a></p>` : ''}</div>${facts(s.plan_commitments).length ? `<div class="commit">${facts(s.plan_commitments).map(([t, x]) => `<div class="commit-i rv"><h4>${esc(t)}</h4><p>${esc(x)}</p></div>`).join('')}</div>` : ''}` : '';
 
   // ---------- piezas
@@ -170,6 +171,7 @@
         <div class="wrap phero-in intro"><a href="${ROOT}#parroquias" class="back">← Todas las parroquias</a><span class="kicker">Parroquia</span><h1>${esc(p.name)}</h1>${p.tagline ? `<p class="lead">${esc(p.tagline)}</p>` : ''}</div>${seal()}</section>`
       + sec('', '', `<div class="wrap pinfo"><div class="rv"><span class="eyebrow">Conoce ${esc(p.name)}</span><div class="prose">${paras(p.description)}</div></div>${fx.length ? `<dl class="facts rv d2">${fx.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</div>`)
       + sec('alt', 'propuestas', `<div class="wrap">${head('Plan de trabajo', 'Propuestas para ' + p.name)}${propsGrid(of('proposals', slug))}</div>`)
+      + (pillars.length ? sec('', 'plan', `<div class="wrap">${head('Plan Contigo', s.plan_title || 'Los 4 ejes del Plan Contigo', 'Conoce cada eje principal del plan para Celica y sus parroquias.')}<div class="plan rv">${planGrid()}</div></div>`) : '')
       + (comm.length ? sec('', '', `<div class="wrap">${head('Territorio', 'Comunidades')}<div class="grid3">${comm.map(commCard).join('')}</div></div>`) : '')
       + (gal.length ? sec('alt', '', `<div class="wrap">${head('Galería', p.name + ' en imágenes y videos')}<div class="gal">${gal.map(i => galItem(i, 'gal-i rv')).join('')}</div></div>`) : '')
       + (team.length ? sec('', 'equipo', `<div class="wrap">${head('Junta parroquial', 'Nuestro equipo en ' + p.name)}${team.map(t => `<a class="teamfull rv" href="${esc(src(t.photo))}" data-lb data-cap="${esc([t.name, t.role].filter(Boolean).join(' · '))}"><img src="${esc(src(t.photo))}" alt="${esc('Equipo de ' + p.name)}" loading="lazy" decoding="async"><span>🔍 Ampliar</span></a>`).join('')}</div>`) : '')
