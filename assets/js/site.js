@@ -82,15 +82,26 @@
     .map(([u, t], k) => `<a class="doc-btn${k ? ' alt' : ''}" href="${esc(docHref(u))}" target="_blank" rel="noopener">${/\.(webp|jpe?g|png|gif)(\?|$)/i.test(u) ? '🔍' : /presentaci/i.test(t) ? '🖼️' : '📄'} ${esc(t)} ↗</a>`).join('');
   const safeDoc = u => !!u && (/^assets\//.test(u) || !!safeUrl(u));
   // Propuestas: tarjeta compacta; al tocarla se abre completa en un recuadro sobre fondo difuminado.
-  const propTags = x => `<div class="tags">${x.category ? `<span class="tag">${esc(x.category)}</span>` : ''}<span class="tag t2">${esc(parishNames[x.parish] || 'Todo el cantón')}</span></div>`;
+  const propTags = x => `<div class="tags">${kidsOf(x).length ? '<span class="tag tm">⭐ Macroproyecto</span>' : ''}${x.category ? `<span class="tag">${esc(x.category)}</span>` : ''}<span class="tag t2">${esc(parishNames[x.parish] || 'Todo el cantón')}</span>${x.also && x.also !== x.parish && parishNames[x.also] ? `<span class="tag t2">${esc(parishNames[x.also])}</span>` : ''}</div>`;
   // Propuestas relacionadas: enlaces que abren la otra propuesta (en esta página o en la portada).
   const pById = Object.fromEntries(of('proposals').map(x => [x.id, x]));
-  const relLinks = x => { const r = [...new Set(String(x.rel || '').split(/[^\d]+/).filter(Boolean))].map(n => pById[n]).filter(o => o && o.id !== x.id);
-    return r.length ? `<div class="rel"><b>Propuestas relacionadas</b>${r.map(o => `<a class="rel-a" data-p="${o.id}" href="${esc(href('#p-' + o.id))}"><small>${esc(parishNames[o.parish] || 'Todo el cantón')}</small>${esc(o.title)} →</a>`).join('')}</div>` : ''; };
-  const propsGrid = list => `<div class="grid3 props">${list.map(x => { const hasDoc = safeDoc(x.doc) || safeDoc(x.doc2); return `<article class="card prop rv" data-id="${x.id}" data-parish="${esc(x.parish || '')}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="Leer la propuesta: ${esc(x.title)}">
+  // Macroproyectos: una propuesta puede "formar parte" de otra (campo parent); la principal lista sus proyectos.
+  const parentOf = x => { const o = pById[String(x.parent || '').replace(/\D/g, '')]; return o && o.id !== x.id ? o : null; };
+  // El orden de los proyectos sigue el campo "Propuestas relacionadas" de la propuesta principal.
+  const idList = x => String(x.rel || '').split(/[^\d]+/).filter(Boolean);
+  const kidsOf = x => { const ord = idList(x), k = of('proposals').filter(o => parentOf(o) === x), at = o => { const i = ord.indexOf(String(o.id)); return i < 0 ? 1e9 : i; };
+    return k.sort((a, b) => at(a) - at(b)); };
+  const relA = o => `<a class="rel-a" data-p="${o.id}" href="${esc(href('#p-' + o.id))}"><small>${esc(parishNames[o.parish] || 'Todo el cantón')}</small>${esc(o.title)} →</a>`;
+  const relLinks = x => { const skip = new Set([x, parentOf(x), ...kidsOf(x)]);
+    const r = [...new Set(idList(x))].map(n => pById[n]).filter(o => o && !skip.has(o));
+    const k = kidsOf(x);
+    return (k.length ? `<div class="rel kids"><b>Proyectos que forman parte de este macroproyecto</b>${k.map(relA).join('')}</div>` : '')
+      + (r.length ? `<div class="rel"><b>Propuestas relacionadas</b>${r.map(relA).join('')}</div>` : ''); };
+  const macroA = x => { const m = parentOf(x); return m ? `<a class="macro-a rel-a" data-p="${m.id}" href="${esc(href('#p-' + m.id))}"><small>⭐ Forma parte del macroproyecto</small>${esc(m.title)} →</a>` : ''; };
+  const propsGrid = list => `<div class="grid3 props">${list.map(x => { const hasDoc = safeDoc(x.doc) || safeDoc(x.doc2); return `<article class="card prop rv" data-id="${x.id}" data-parish="${esc(x.parish || '')}" data-also="${esc(x.also || '')}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="Leer la propuesta: ${esc(x.title)}">
       ${x.image ? pic(x.image, x.title, 'card-img') : ''}<div class="card-b">${propTags(x)}
-      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}<span class="prop-more">${hasDoc ? '📄 Incluye proyecto completo · ' : ''}Leer propuesta completa →</span></div>
-      <template class="prop-full">${x.image ? `<div class="pm-img">${pic(x.image, x.title, '', true)}</div>` : ''}<div class="pm-b">${propTags(x)}<h3 id="pm-t">${esc(x.title)}</h3>${x.summary ? `<p class="pm-lead">${esc(x.summary)}</p>` : ''}${hasDoc ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<div class="prose">${paras(x.body)}</div>` : ''}${relLinks(x)}</div></template></article>`; }).join('')
+      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}${parentOf(x) ? `<span class="prop-macro">⭐ Parte de «${esc(parentOf(x).title.split(':')[0])}»</span>` : ''}${kidsOf(x).length ? `<span class="prop-macro">⭐ Reúne ${kidsOf(x).length} proyectos</span>` : ''}<span class="prop-more">${hasDoc ? '📄 Incluye proyecto completo · ' : ''}Leer propuesta completa →</span></div>
+      <template class="prop-full">${x.image ? `<div class="pm-img">${pic(x.image, x.title, '', true)}</div>` : ''}<div class="pm-b">${propTags(x)}<h3 id="pm-t">${esc(x.title)}</h3>${macroA(x)}${x.summary ? `<p class="pm-lead">${esc(x.summary)}</p>` : ''}${hasDoc ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<div class="prose">${paras(x.body)}</div>` : ''}${relLinks(x)}</div></template></article>`; }).join('')
     || '<p class="muted empty">Muy pronto publicaremos las propuestas.</p>'}</div>`;
 
   // Portada de una publicación de red social: imagen subida o tarjeta con el color de la red.
@@ -187,7 +198,7 @@
         <div class="wrap phero-in intro"><a href="${ROOT}#parroquias" class="back">← Todas las parroquias</a><span class="kicker">${esc(kick)}</span><h1>${esc(p.name)}</h1>${p.tagline ? `<p class="lead">${esc(p.tagline)}</p>` : ''}</div>${seal()}</section>` + rest();
     function rest() { return sec('', '', `<div class="wrap pinfo"><div class="rv"><span class="eyebrow">Conoce ${own ? 'el ' : ''}${esc(p.name)}</span>${own && p.tagline ? `<h2 class="ttl">${esc(p.tagline)}</h2>` : ''}<div class="prose">${paras(p.description)}</div></div>${fx.length ? `<dl class="facts rv d2">${fx.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</div>`)
       + lead
-      + sec('alt', 'propuestas', `<div class="wrap">${head('Plan de trabajo', (own ? 'Propuestas del ' : 'Propuestas para ') + p.name)}${propsGrid(of('proposals', slug))}</div>`)
+      + sec('alt', 'propuestas', `<div class="wrap">${head('Plan de trabajo', (own ? 'Propuestas del ' : 'Propuestas para ') + p.name)}${propsGrid(of('proposals').filter(x => x.parish === slug || x.also === slug))}</div>`)
       + (pillars.length ? sec('', 'plan', `<div class="wrap">${head('Plan Contigo', 'Conoce los 4 ejes')}<div class="plan-mini">${pillars.map((o, i) => `<a class="pillar-mini c-${esc(o.color || 'azul')}" href="${href('eje/' + o.slug + '/')}"><b>${i + 1}.</b> ${esc(o.title)} →</a>`).join('')}</div></div>`) : '')
       + (comm.length ? sec('', '', `<div class="wrap">${head('Territorio', 'Comunidades')}<div class="grid3">${comm.map(commCard).join('')}</div></div>`) : '')
       + (gal.length ? sec('alt', '', `<div class="wrap">${head('Galería', p.name + ' en imágenes y videos')}<div class="gal">${gal.map(i => galItem(i, 'gal-i rv')).join('')}</div></div>`) : '')
@@ -240,7 +251,7 @@
     const sync = () => { const i = page(), n = view.children.length; [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i)); $('.prev', box).disabled = i <= 0; $('.next', box).disabled = i >= n - 1; };
     const go = i => { view.scrollTo({ left: Math.max(0, i) * view.clientWidth, behavior: 'smooth' }); };
     const build = () => {
-      const per = mq.matches ? 2 : 6, list = cards.filter(c => f === '*' || c.dataset.parish === f);
+      const per = mq.matches ? 2 : 6, list = cards.filter(c => f === '*' || c.dataset.parish === f || (f && c.dataset.also === f));
       view.replaceChildren();
       for (let i = 0; i < list.length; i += per) { const pg = document.createElement('div'); pg.className = 'pg-page ' + cls; pg.append(...list.slice(i, i + per)); view.append(pg); }
       if (!list.length) view.innerHTML = `<p class="muted empty">${emptyMsg}</p>`;

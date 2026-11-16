@@ -227,3 +227,8 @@ html.pm-on{overflow:hidden}
 @media (max-width:600px){.ban-in{top:10px}.phero.ban .back{font-size:.8rem}}
 .phero.ban .seal{display:none}
 .lead-bio .bio-img{aspect-ratio:auto}
+/* Macroproyectos */
+.tag.tm{background:var(--y);color:var(--pdd)}
+.prop-macro{display:block;margin-top:8px;font-size:.76rem;font-weight:800;color:var(--pdd);background:#fbf9d6;border-radius:8px;padding:4px 8px;width:fit-content}
+.macro-a{margin:0 0 14px;background:#fbf9d6;border:1px solid #ece77a}.macro-a:hover{background:#f6f2b0}
+.rel.kids{border-top:0;margin-top:18px;padding:16px;border-radius:16px;background:#faf6fd;border:1px solid #eee5f3}.rel.kids .rel-a{background:#fff}
