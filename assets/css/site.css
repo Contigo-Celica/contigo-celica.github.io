@@ -196,3 +196,6 @@ iframe.card-img{border:0}
 .pg-dots{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}.pg-dots button{width:10px;height:10px;padding:0;border:0;border-radius:6px;background:#d8c8e4;cursor:pointer;transition:width .3s var(--e),background .3s}.pg-dots button.on{width:28px;background:var(--p)}
 @media (max-width:1000px){.pg-page.grid3{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}}
 @media (max-width:700px){.pg-page.grid3{gap:12px}.pg-page .card-b{padding:12px 12px 14px}.pg-page .card-b h3{font-size:.92rem}.pg-page .card-b p{font-size:.8rem;line-height:1.45;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}.pg-page .tags{gap:4px;margin-bottom:8px}.pg-page .tag{font-size:.6rem;padding:3px 7px}.pg-page details summary{font-size:.8rem}.pg-page .prose.sm{font-size:.82rem}}
+#plan .plan-mini{grid-template-columns:repeat(4,1fr)}
+@media (max-width:1000px){#plan .plan-mini{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){#plan .plan-mini{grid-template-columns:1fr}}
