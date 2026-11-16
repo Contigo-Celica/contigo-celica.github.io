@@ -78,7 +78,7 @@
   // Documento de un proyecto: el PDF se abre en el navegador; Word, PowerPoint o Excel con el visor de Office.
   const docHref = u => { const a = new URL(src(u), location.href).href; return /\.(docx?|pptx?|xlsx?)(\?|$)/i.test(a) ? 'https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(a) : a; };
   const docBtns = x => [[x.doc, x.doc_label || 'Leer el proyecto completo'], [x.doc2, x.doc2_label || 'Ver la presentación']].filter(([u]) => safeDoc(u))
-    .map(([u, t], k) => `<a class="doc-btn${k ? ' alt' : ''}" href="${esc(docHref(u))}" target="_blank" rel="noopener">${k ? '🖼️' : '📄'} ${esc(t)} ↗</a>`).join('');
+    .map(([u, t], k) => `<a class="doc-btn${k ? ' alt' : ''}" href="${esc(docHref(u))}" target="_blank" rel="noopener">${/presentaci/i.test(t) ? '🖼️' : '📄'} ${esc(t)} ↗</a>`).join('');
   const safeDoc = u => !!u && (/^assets\//.test(u) || !!safeUrl(u));
   const propsGrid = list => `<div class="grid3 props">${list.map(x => `<article class="card prop rv" data-parish="${esc(x.parish || '')}">
       ${x.image ? pic(x.image, x.title, 'card-img') : ''}<div class="card-b"><div class="tags">${x.category ? `<span class="tag">${esc(x.category)}</span>` : ''}<span class="tag t2">${esc(parishNames[x.parish] || 'Todo el cantón')}</span></div>
