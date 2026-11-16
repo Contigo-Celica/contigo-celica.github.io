@@ -73,16 +73,20 @@
       <div><h2>Parroquias</h2><ul class="flinks">${parishes.map(p => `<li><a href="${href('parroquia/' + p.slug + '/')}">${esc(p.name)}</a></li>`).join('')}</ul></div>
     </div><div class="wrap ftr-bottom">© ${esc(s.candidate_name)} · ${esc(s.party)} · Celica, Loja, Ecuador</div>${seal()}</footer>
     ${waUrl ? `<a class="wa-float" href="${esc(waUrl)}" target="_blank" rel="noopener" aria-label="WhatsApp">${icon.wa}</a>` : ''}
-    <div class="lb" hidden><button class="lb-x" aria-label="Cerrar">×</button><div class="lb-m"></div><p></p></div>`;
+    <div class="lb" hidden><button class="lb-x" aria-label="Cerrar">×</button><div class="lb-m"></div><p></p></div>
+    <div class="pm" hidden><div class="pm-box" role="dialog" aria-modal="true" aria-labelledby="pm-t"><button class="pm-x" type="button" aria-label="Cerrar">×</button><div class="pm-c"></div></div></div>`;
 
   // Documento de un proyecto: el PDF se abre en el navegador; Word, PowerPoint o Excel con el visor de Office.
   const docHref = u => { const a = new URL(src(u), location.href).href; return /\.(docx?|pptx?|xlsx?)(\?|$)/i.test(a) ? 'https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(a) : a; };
   const docBtns = x => [[x.doc, x.doc_label || 'Leer el proyecto completo'], [x.doc2, x.doc2_label || 'Ver la presentación']].filter(([u]) => safeDoc(u))
     .map(([u, t], k) => `<a class="doc-btn${k ? ' alt' : ''}" href="${esc(docHref(u))}" target="_blank" rel="noopener">${/presentaci/i.test(t) ? '🖼️' : '📄'} ${esc(t)} ↗</a>`).join('');
   const safeDoc = u => !!u && (/^assets\//.test(u) || !!safeUrl(u));
-  const propsGrid = list => `<div class="grid3 props">${list.map(x => `<article class="card prop rv" data-parish="${esc(x.parish || '')}">
-      ${x.image ? pic(x.image, x.title, 'card-img') : ''}<div class="card-b"><div class="tags">${x.category ? `<span class="tag">${esc(x.category)}</span>` : ''}<span class="tag t2">${esc(parishNames[x.parish] || 'Todo el cantón')}</span></div>
-      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}${safeDoc(x.doc) || safeDoc(x.doc2) ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<details><summary>Ver detalle</summary><div class="prose sm">${paras(x.body)}</div></details>` : ''}</div></article>`).join('')
+  // Propuestas: tarjeta compacta; al tocarla se abre completa en un recuadro sobre fondo difuminado.
+  const propTags = x => `<div class="tags">${x.category ? `<span class="tag">${esc(x.category)}</span>` : ''}<span class="tag t2">${esc(parishNames[x.parish] || 'Todo el cantón')}</span></div>`;
+  const propsGrid = list => `<div class="grid3 props">${list.map(x => { const hasDoc = safeDoc(x.doc) || safeDoc(x.doc2); return `<article class="card prop rv" data-parish="${esc(x.parish || '')}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="Leer la propuesta: ${esc(x.title)}">
+      ${x.image ? pic(x.image, x.title, 'card-img') : ''}<div class="card-b">${propTags(x)}
+      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}<span class="prop-more">${hasDoc ? '📄 Incluye proyecto completo · ' : ''}Leer propuesta completa →</span></div>
+      <template class="prop-full">${x.image ? `<div class="pm-img">${pic(x.image, x.title, '', true)}</div>` : ''}<div class="pm-b">${propTags(x)}<h3 id="pm-t">${esc(x.title)}</h3>${x.summary ? `<p class="pm-lead">${esc(x.summary)}</p>` : ''}${hasDoc ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<div class="prose">${paras(x.body)}</div>` : ''}</div></template></article>`; }).join('')
     || '<p class="muted empty">Muy pronto publicaremos las propuestas.</p>'}</div>`;
 
   // Portada de una publicación de red social: imagen subida o tarjeta con el color de la red.
@@ -272,6 +276,28 @@
     f.className = 'card-img'; f.allow = 'autoplay; encrypted-media; picture-in-picture'; f.allowFullscreen = true; f.title = 'Video';
     b.replaceWith(f);
   }));
+
+  // Visor de propuestas: abre la tarjeta completa; se cierra con ×, Escape o tocando fuera.
+  const pm = $('.pm'), pmc = $('.pm-c', pm);
+  let pmFrom = null;
+  const pmOpen = card => {
+    pmc.innerHTML = $('template.prop-full', card).innerHTML; pmFrom = card;
+    pm.hidden = false; document.documentElement.classList.add('pm-on'); $('.pm-box', pm).scrollTop = 0;
+    void pm.offsetWidth; pm.classList.add('in'); $('.pm-x', pm).focus({ preventScroll: true });
+  };
+  const pmClose = () => {
+    if (pm.hidden) return; pm.classList.remove('in'); document.documentElement.classList.remove('pm-on');
+    setTimeout(() => { pm.hidden = true; pmc.innerHTML = ''; }, 220); pmFrom?.focus({ preventScroll: true });
+  };
+  document.addEventListener('click', e => {
+    const card = e.target.closest('.prop'); if (!card || e.target.closest('a,button') || !$('template.prop-full', card)) return;
+    pmOpen(card);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') return pmClose();
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('prop')) { e.preventDefault(); pmOpen(e.target); }
+  });
+  pm.addEventListener('click', e => { if (e.target === pm || e.target.closest('.pm-x')) pmClose(); });
 
   // Visor: fotos, videos subidos y YouTube. Al cerrar se detiene la reproducción.
   const lb = $('.lb'), lbm = $('.lb-m', lb);

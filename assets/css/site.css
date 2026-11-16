@@ -201,3 +201,18 @@ iframe.card-img{border:0}
 @media (max-width:560px){#plan .plan-mini{grid-template-columns:1fr}}
 .docs{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}.doc-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--p);color:#fff;font-weight:700;font-size:.82rem;line-height:1.2;text-decoration:none;transition:transform .2s var(--e),background .2s}.doc-btn:hover{transform:translateY(-2px);background:var(--pdd)}.doc-btn.alt{background:var(--y);color:var(--pdd)}
 @media (max-width:700px){.pg-page .doc-btn{font-size:.7rem;padding:6px 10px}}
+/* Propuestas: tarjeta compacta y visor difuminado */
+.prop{cursor:pointer;transition:transform .3s var(--e),box-shadow .3s var(--e)}.prop:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(60,20,90,.18)}.prop:focus-visible{outline:3px solid var(--y);outline-offset:3px}
+.prop .card-b>p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.prop-more{display:block;margin-top:10px;color:var(--p);font-weight:800;font-size:.82rem}
+.pm{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;background:rgba(42,13,59,.45);-webkit-backdrop-filter:blur(10px) saturate(1.1);backdrop-filter:blur(10px) saturate(1.1);opacity:0;transition:opacity .22s ease}
+.pm[hidden]{display:none}.pm.in{opacity:1}
+.pm-box{position:relative;width:min(760px,100%);max-height:min(88vh,900px);overflow:auto;overscroll-behavior:contain;background:#fff;border-radius:22px;box-shadow:0 30px 80px rgba(20,5,35,.45);transform:translateY(18px) scale(.97);transition:transform .25s var(--e)}
+.pm.in .pm-box{transform:none}
+.pm-x{position:sticky;top:10px;float:right;margin:10px 10px -54px 0;z-index:2;width:44px;height:44px;border-radius:50%;border:0;background:var(--pdd);color:#fff;font-size:1.6rem;line-height:1;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.pm-img{background:#fff;border-bottom:1px solid #eee5f3}.pm-img img{display:block;width:100%;max-height:360px;object-fit:contain}
+.pm-b{padding:22px 28px 30px}.pm-b h3{font-size:1.45rem;line-height:1.25;color:var(--pdd);margin:6px 0 10px}.pm-lead{font-size:1.02rem;font-weight:600;color:var(--ink);margin:0 0 14px}
+.pm-b .prose{font-size:.98rem}.pm-b .docs{margin:4px 0 18px}
+html.pm-on{overflow:hidden}
+@media (max-width:700px){.pm{padding:0;place-items:end center}.pm-box{width:100%;max-height:92vh;border-radius:22px 22px 0 0;transform:translateY(40px)}.pm-b{padding:18px 18px 28px}.pm-b h3{font-size:1.2rem}.pm-img img{max-height:240px}.pg-page .prop-more{font-size:.72rem;margin-top:6px}}
+@media (prefers-reduced-motion:reduce){.pm,.pm-box{transition:none}}
