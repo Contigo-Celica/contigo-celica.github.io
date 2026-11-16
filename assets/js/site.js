@@ -75,9 +75,14 @@
     ${waUrl ? `<a class="wa-float" href="${esc(waUrl)}" target="_blank" rel="noopener" aria-label="WhatsApp">${icon.wa}</a>` : ''}
     <div class="lb" hidden><button class="lb-x" aria-label="Cerrar">×</button><div class="lb-m"></div><p></p></div>`;
 
+  // Documento de un proyecto: el PDF se abre en el navegador; Word, PowerPoint o Excel con el visor de Office.
+  const docHref = u => { const a = new URL(src(u), location.href).href; return /\.(docx?|pptx?|xlsx?)(\?|$)/i.test(a) ? 'https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(a) : a; };
+  const docBtns = x => [[x.doc, x.doc_label || 'Leer el proyecto completo'], [x.doc2, x.doc2_label || 'Ver la presentación']].filter(([u]) => safeDoc(u))
+    .map(([u, t], k) => `<a class="doc-btn${k ? ' alt' : ''}" href="${esc(docHref(u))}" target="_blank" rel="noopener">${k ? '🖼️' : '📄'} ${esc(t)} ↗</a>`).join('');
+  const safeDoc = u => !!u && (/^assets\//.test(u) || !!safeUrl(u));
   const propsGrid = list => `<div class="grid3 props">${list.map(x => `<article class="card prop rv" data-parish="${esc(x.parish || '')}">
       ${x.image ? pic(x.image, x.title, 'card-img') : ''}<div class="card-b"><div class="tags">${x.category ? `<span class="tag">${esc(x.category)}</span>` : ''}<span class="tag t2">${esc(parishNames[x.parish] || 'Todo el cantón')}</span></div>
-      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}${x.body ? `<details><summary>Ver detalle</summary><div class="prose sm">${paras(x.body)}</div></details>` : ''}</div></article>`).join('')
+      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}${safeDoc(x.doc) || safeDoc(x.doc2) ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<details><summary>Ver detalle</summary><div class="prose sm">${paras(x.body)}</div></details>` : ''}</div></article>`).join('')
     || '<p class="muted empty">Muy pronto publicaremos las propuestas.</p>'}</div>`;
 
   // Portada de una publicación de red social: imagen subida o tarjeta con el color de la red.

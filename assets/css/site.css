@@ -199,3 +199,5 @@ iframe.card-img{border:0}
 #plan .plan-mini{grid-template-columns:repeat(4,1fr)}
 @media (max-width:1000px){#plan .plan-mini{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){#plan .plan-mini{grid-template-columns:1fr}}
+.docs{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px}.doc-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--p);color:#fff;font-weight:700;font-size:.82rem;line-height:1.2;text-decoration:none;transition:transform .2s var(--e),background .2s}.doc-btn:hover{transform:translateY(-2px);background:var(--pdd)}.doc-btn.alt{background:var(--y);color:var(--pdd)}
+@media (max-width:700px){.pg-page .doc-btn{font-size:.7rem;padding:6px 10px}}

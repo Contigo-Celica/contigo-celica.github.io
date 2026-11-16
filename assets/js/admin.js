@@ -81,6 +81,8 @@
       case 'select': return `<label>${lbl}<select name="${f.name}">${opts(f.options)}</select></label>`;
       case 'parish': return `<label>${lbl}<select name="${f.name}">${opts(schema.parishes, f.required ? undefined : 'Todo el cantón')}</select></label>`;
       case 'category': { const cs = cats().map(c => [c, c]); if (v && !cats().includes(v)) cs.push([v, v]); return `<label>${lbl}<select name="${f.name}">${opts(cs, '—')}</select></label>`; }
+      case 'file': return `<div class="media" data-type="file"><span class="docic">${esc(docExt(v) || '📄')}</span><div class="mf"><b>${lbl}</b><input name="${f.name}" value="${esc(v)}" placeholder="Sube un archivo o pega una URL https://"${req}>
+          <div class="mb"><label class="btn sm g">Subir documento<input type="file" hidden accept="${DOC_ACCEPT}"></label>${v ? `<a class="btn sm g" href="${esc(src(v))}" target="_blank" rel="noopener">Ver ↗</a>` : ''}<button type="button" class="btn sm g clr">Quitar</button></div><small class="muted">PDF, Word, PowerPoint o Excel · máx. 50 MB. El PDF se abre directo en el navegador.</small></div></div>`;
       case 'image': case 'video': {
         const prev = f.type === 'image' ? `<img src="${esc(src(v)) || 'data:,'}" alt="">` : `<video src="${esc(src(v))}" muted></video>`;
         return `<div class="media" data-type="${f.type}">${prev}<div class="mf"><b>${lbl}</b><input name="${f.name}" value="${esc(v)}" placeholder="Sube un archivo o pega una URL https://"${req}>
@@ -89,10 +91,11 @@
       default: return `<label>${lbl}<input name="${f.name}" type="${{ url: 'url', email: 'email', date: 'date' }[f.type] || 'text'}" value="${esc(v)}"${req}></label>`;
     }
   }
+  const docExt = u => ((u || '').split('?')[0].match(/\.(\w{2,4})$/) || [, ''])[1].toUpperCase();
   function bindMedia(root) {
     $$('.media', root).forEach(m => {
-      const inp = $('input[name]', m), prev = $('img,video', m);
-      const sync = () => { prev.src = src(inp.value) || (prev.tagName === 'IMG' ? 'data:,' : ''); };
+      const inp = $('input[name]', m), prev = $('img,video,.docic', m);
+      const sync = () => { if (prev.tagName === 'SPAN') { prev.textContent = docExt(inp.value) || '📄'; return; } prev.src = src(inp.value) || (prev.tagName === 'IMG' ? 'data:,' : ''); };
       inp.addEventListener('change', sync);
       $('.clr', m).onclick = () => { inp.value = ''; sync(); };
       $('input[type=file]', m).addEventListener('change', guard(async e => {
@@ -126,7 +129,7 @@
       const el = form.elements[f.name];
       if (f.type === 'bool') { out[f.name] = el.checked ? '1' : ''; continue; }
       const v = el.value.trim();
-      const bad = v && ((f.type === 'url' && !/^https?:\/\//i.test(v)) || (['image', 'video'].includes(f.type) && !/^(https:\/\/|assets\/)/i.test(v)) ||
+      const bad = v && ((f.type === 'url' && !/^https?:\/\//i.test(v)) || (['image', 'video', 'file'].includes(f.type) && !/^(https:\/\/|assets\/)/i.test(v)) ||
         (f.type === 'email' && !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(v)) || (f.type === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(v)));
       if (bad) throw new Error(`El campo «${f.label}» no es válido.`);
       if (f.required && !v) throw new Error(`El campo «${f.label}» es obligatorio.`);
@@ -163,12 +166,24 @@
     }
     throw new Error('La imagen es demasiado grande para procesarla. Redúcela e inténtalo de nuevo.');
   };
+  // Documentos permitidos (propuestas y proyectos).
+  const DOCS = { pdf: 'application/pdf', doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    odt: 'application/vnd.oasis.opendocument.text', odp: 'application/vnd.oasis.opendocument.presentation', ods: 'application/vnd.oasis.opendocument.spreadsheet' };
+  const DOC_ACCEPT = Object.keys(DOCS).map(e => '.' + e).join(',');
   const EXT = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif' };
   const typeOf = f => /^image\/(jpeg|png|webp|gif)$/.test(f.type) ? f.type : f.type === 'image/x-png' ? 'image/png' :
     ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' })[(f.name.split('.').pop() || '').toLowerCase()] || '';
   async function upload(file) {
     const id = crypto.randomUUID().replace(/-/g, '').slice(0, 16), bucket = sb.storage.from('media');
     const put = async (path, body, type) => { ok(await bucket.upload(path, body, { contentType: type, cacheControl: '31536000', upsert: false })); return bucket.getPublicUrl(path).data.publicUrl; };
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (DOCS[ext]) {
+      if (file.size > 50 * 1024 * 1024) throw new Error('El documento supera 50 MB. Guárdalo como PDF o redúcelo e inténtalo de nuevo.');
+      const name = file.name.replace(/\.[^.]+$/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 60) || 'documento';
+      return put(`docs/${id}-${name}.${ext}`, file, DOCS[ext]);
+    }
     if (/^video\/(mp4|webm)$/.test(file.type)) {
       if (file.size > 50 * 1024 * 1024) throw new Error('El video supera 50 MB. Súbelo a YouTube o Facebook y pega el enlace.');
       return put(`video/${id}.${file.type.split('/')[1]}`, file, file.type);
