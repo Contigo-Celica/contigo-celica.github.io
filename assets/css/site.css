@@ -233,3 +233,4 @@ html.pm-on{overflow:hidden}
 .phero.ban h1{font-size:clamp(1.9rem,4.2vw,3.3rem);line-height:1.05}.phero.ban .lead{color:var(--y);font-weight:700}
 .phero-ban{display:block;width:100%;height:auto;border-radius:18px}
 @media (max-width:760px){.ban-in{grid-template-columns:1fr;gap:20px;padding:40px 0 32px}}
+.prop-macro+.prop-macro{margin-top:4px}.macro-a+.macro-a{margin-top:-6px}

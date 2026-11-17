@@ -86,21 +86,21 @@
   // Propuestas relacionadas: enlaces que abren la otra propuesta (en esta página o en la portada).
   const pById = Object.fromEntries(of('proposals').map(x => [x.id, x]));
   // Macroproyectos: una propuesta puede "formar parte" de otra (campo parent); la principal lista sus proyectos.
-  const parentOf = x => { const o = pById[String(x.parent || '').replace(/\D/g, '')]; return o && o.id !== x.id ? o : null; };
+  const parentsOf = x => [...new Set(String(x.parent || '').split(/[^\d]+/).filter(Boolean))].map(n => pById[n]).filter(o => o && o.id !== x.id);
   // El orden de los proyectos sigue el campo "Propuestas relacionadas" de la propuesta principal.
   const idList = x => String(x.rel || '').split(/[^\d]+/).filter(Boolean);
-  const kidsOf = x => { const ord = idList(x), k = of('proposals').filter(o => parentOf(o) === x), at = o => { const i = ord.indexOf(String(o.id)); return i < 0 ? 1e9 : i; };
+  const kidsOf = x => { const ord = idList(x), k = of('proposals').filter(o => parentsOf(o).includes(x)), at = o => { const i = ord.indexOf(String(o.id)); return i < 0 ? 1e9 : i; };
     return k.sort((a, b) => at(a) - at(b)); };
   const relA = o => `<a class="rel-a" data-p="${o.id}" href="${esc(href('#p-' + o.id))}"><small>${esc(parishNames[o.parish] || 'Todo el cantón')}</small>${esc(o.title)} →</a>`;
-  const relLinks = x => { const skip = new Set([x, parentOf(x), ...kidsOf(x)]);
+  const relLinks = x => { const skip = new Set([x, ...parentsOf(x), ...kidsOf(x)]);
     const r = [...new Set(idList(x))].map(n => pById[n]).filter(o => o && !skip.has(o));
     const k = kidsOf(x);
     return (k.length ? `<div class="rel kids"><b>Proyectos que forman parte de este macroproyecto</b>${k.map(relA).join('')}</div>` : '')
       + (r.length ? `<div class="rel"><b>Propuestas relacionadas</b>${r.map(relA).join('')}</div>` : ''); };
-  const macroA = x => { const m = parentOf(x); return m ? `<a class="macro-a rel-a" data-p="${m.id}" href="${esc(href('#p-' + m.id))}"><small>⭐ Forma parte del macroproyecto</small>${esc(m.title)} →</a>` : ''; };
+  const macroA = x => parentsOf(x).map(m => `<a class="macro-a rel-a" data-p="${m.id}" href="${esc(href('#p-' + m.id))}"><small>⭐ Forma parte del macroproyecto</small>${esc(m.title)} →</a>`).join('');
   const propsGrid = list => `<div class="grid3 props">${list.map(x => { const hasDoc = safeDoc(x.doc) || safeDoc(x.doc2); return `<article class="card prop rv" data-id="${x.id}" data-parish="${esc(x.parish || '')}" data-also="${esc(x.also || '')}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="Leer la propuesta: ${esc(x.title)}">
       ${x.image ? pic(x.image, x.title, 'card-img') : ''}<div class="card-b">${propTags(x)}
-      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}${parentOf(x) ? `<span class="prop-macro">⭐ Parte de «${esc(parentOf(x).title.split(':')[0])}»</span>` : ''}${kidsOf(x).length ? `<span class="prop-macro">⭐ Reúne ${kidsOf(x).length} proyectos</span>` : ''}<span class="prop-more">${hasDoc ? '📄 Incluye proyecto completo · ' : ''}Leer propuesta completa →</span></div>
+      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}${parentsOf(x).map(m => `<span class="prop-macro">⭐ Parte de «${esc(m.title.split(':')[0])}»</span>`).join('')}${kidsOf(x).length ? `<span class="prop-macro">⭐ Reúne ${kidsOf(x).length} proyectos</span>` : ''}<span class="prop-more">${hasDoc ? '📄 Incluye proyecto completo · ' : ''}Leer propuesta completa →</span></div>
       <template class="prop-full">${x.image ? `<div class="pm-img">${pic(x.image, x.title, '', true)}</div>` : ''}<div class="pm-b">${propTags(x)}<h3 id="pm-t">${esc(x.title)}</h3>${macroA(x)}${x.summary ? `<p class="pm-lead">${esc(x.summary)}</p>` : ''}${hasDoc ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<div class="prose">${paras(x.body)}</div>` : ''}${relLinks(x)}</div></template></article>`; }).join('')
     || '<p class="muted empty">Muy pronto publicaremos las propuestas.</p>'}</div>`;
 
