@@ -43,7 +43,7 @@
     algarrobillo: { pin: [1093, 540], hit: [[966, 506, 1222, 688], [1274, 504, 1652, 562]],
       it: [[1256, 568, 1652, 609, 51], [1256, 610, 1652, 649, 52], [1256, 650, 1652, 690, 53], [1256, 691, 1652, 731, 54], [1256, 732, 1652, 771, 137], [1256, 772, 1652, 814, 138]] }
   };
-  const BRIDGES = [[560, 452, 167, 'La Sanguí', 'celica'], [830, 458, 167, 'La Quiara', 'celica'], [300, 520, 169, 'Guángulo', 'pozul'], [520, 540, 170, 'Higuerón', 'sabanilla'], [930, 575, 171, 'Balsas', 'algarrobillo']];
+  const BRIDGES = [[700, 470, 167, 'La Sanguí – La Quiara', 'celica'], [300, 520, 169, 'Guángulo', 'pozul'], [520, 540, 170, 'Higuerón', 'sabanilla'], [930, 575, 171, 'Balsas', 'algarrobillo']];
   const EJES = [[500, 852, 800, 926], [820, 852, 1112, 926], [1130, 852, 1372, 926], [1392, 852, 1648, 926]];
   const box = r => r.join(','), pinPos = r => r.join(',');
   const propHref = (id, sl) => href(sl ? `parroquia/${sl}/#p-${id}` : `#p-${id}`);
@@ -55,18 +55,26 @@
       <img src="${esc(src('assets/plan/mapa-canton-celica.webp'))}" alt="Mapa del cantón Celica con sus parroquias y las propuestas del Plan Contigo" width="${MW}" height="${MH}" decoding="async">
       ${Object.entries(MAP).filter(([sl]) => pmap[sl]).map(([sl, m]) => m.hit.map(r => `<button type="button" class="hs hs-par" data-par="${sl}" data-b="${box(r)}" aria-label="Ampliar la parroquia ${esc(pmap[sl].name)}"></button>`).join('')
         + m.it.map(([x, y, x2, y2, id]) => `<a class="hs hs-it" data-p="${id}" href="${esc(propHref(id, sl))}" data-b="${box([x, y, x2, y2])}" title="${esc(pTitle(id))}"><span class="vh">${esc(pTitle(id))}</span></a>`).join('')).join('')}
-      ${BRIDGES.map(([x, y, id, n, sl]) => `<a class="hs-br" data-p="${id}" href="${esc(propHref(id, sl))}" data-b="${pinPos([x, y])}" title="Puente para ${esc(n)}">${bridgeSvg}<span>Puente ${esc(n)}</span></a>`).join('')}
+      ${BRIDGES.map(([x, y, id, n, sl]) => `<a class="hs-br" data-p="${id}" href="${esc(propHref(id, sl))}" data-b="${pinPos([x, y])}" title="Puente ${esc(n)}">${bridgeSvg}<span>Puente ${esc(n)}</span></a>`).join('')}
       ${pillars.slice(0, 4).map((o, i) => `<a class="hs hs-eje" href="${href('eje/' + o.slug + '/')}" data-b="${box(EJES[i])}" title="Eje ${i + 1}: ${esc(o.title)}"><span class="vh">Eje ${i + 1}: ${esc(o.title)}</span></a>`).join('')}
     </div></div>
     <div class="cmap-layer" hidden></div>
     <nav class="cmap-ejes" aria-label="Los 4 ejes del Plan Contigo">${pillars.map((o, i) => `<a class="pillar-mini c-${esc(o.color || 'azul')}" href="${href('eje/' + o.slug + '/')}"><b>${i + 1}.</b> ${esc(o.title)} →</a>`).join('')}</nav>
   </div>`;
   const cmapLayer = sl => {
-    const pa = pmap[sl], list = of('proposals').filter(x => x.parish === sl || x.also === sl);
+    const pa = pmap[sl], all = of('proposals'), nm = esc(pa.short || pa.name);
+    const here = x => x.parish === sl || x.also === sl;
+    const li = x => `<li><a data-p="${x.id}" href="${esc(propHref(x.id, x.parish))}">${/puente/i.test(x.title) ? '🌉 ' : ''}${esc(x.title)}</a></li>`;
+    const macros = all.filter(x => !x.parish && kidsOf(x).length);
+    const inMacro = new Set(macros.flatMap(m => kidsOf(m).map(k => k.id)));
+    const canton = all.filter(x => !x.parish && !macros.includes(x) && !inMacro.has(x.id));
     return `<div class="cl-in"><button type="button" class="cl-x" aria-label="Cerrar">×</button>
       <span class="kicker">${esc(pa.kicker || 'Parroquia')}</span><h3>${esc(pa.name)}</h3>${pa.tagline ? `<p class="cl-tag">${esc(pa.tagline)}</p>` : ''}
-      <ul class="cl-list">${list.map(x => `<li><a data-p="${x.id}" href="${esc(propHref(x.id, sl))}">${/puente/i.test(x.title) ? '🌉 ' : ''}${esc(x.title)}</a></li>`).join('')}</ul>
-      <a class="btn cl-go" href="${href('parroquia/' + sl + '/')}">Ir a la página de ${esc(pa.short || pa.name)} →</a></div>`;
+      <h4 class="cl-h">📍 Propuestas para ${nm}</h4><ul class="cl-list">${all.filter(here).map(li).join('')}</ul>
+      ${macros.length ? `<h4 class="cl-h">⭐ Macroproyectos que también llegan a ${nm}</h4>${macros.map(m => { const k = kidsOf(m), n = k.filter(here).length; return `<details class="cl-m"><summary><b>${esc(m.title.split(':')[0])}</b><small>${k.length} proyectos${n ? ` · ${n} en ${nm}` : ''}</small></summary>
+        <a class="cl-mm" data-p="${m.id}" href="${esc(propHref(m.id, ''))}">Ver el macroproyecto completo →</a><ul class="cl-list">${k.map(li).join('')}</ul></details>`; }).join('')}` : ''}
+      ${canton.length ? `<details class="cl-m"><summary><b>🌎 Propuestas para todo el cantón</b><small>${canton.length} propuestas que también benefician a ${nm}</small></summary><ul class="cl-list">${canton.map(li).join('')}</ul></details>` : ''}
+      <a class="btn cl-go" href="${href('parroquia/' + sl + '/')}">Ir a la página de ${nm} →</a></div>`;
   };
   const plan = () => pillars.length ? `${s.plan_quote ? `<blockquote class="plan-quote rv">“${esc(s.plan_quote)}”</blockquote>` : ''}<div class="plan rv">${cmap()}
     ${s.plan_image ? `<p class="plan-full"><a href="${esc(src(s.plan_image))}" data-lb data-cap="${esc(s.plan_title)}">🔍 Ver infografía completa</a></p>` : ''}</div>${facts(s.plan_commitments).length ? `<div class="commit">${facts(s.plan_commitments).map(([t, x]) => `<div class="commit-i rv"><h4>${esc(t)}</h4><p>${esc(x)}</p></div>`).join('')}</div>` : ''}` : '';
