@@ -29,12 +29,46 @@
   const href = p => ROOT + p;
   const pillars = of('pillars');
   const subs = p => [1, 2].filter(n => p['sub' + n + '_title']).map(n => ({ t: p['sub' + n + '_title'], x: p['sub' + n + '_text'], img: p['sub' + n + '_image'] }));
-  const planGrid = () => `<div class="plan-grid">${pillars.map((p, i) => `<a class="pillar c-${esc(p.color || 'azul')}" href="${href('eje/' + p.slug + '/')}">
-      <h3 class="pillar-h"><span>${i + 1}.</span> ${esc(p.title)}</h3>
-      <div class="pillar-b">${subs(p).map(u => `<div class="sub"><h4>${esc(u.t)}</h4>${u.img ? `<img src="${esc(src(u.img))}" alt="" loading="lazy">` : ''}<p>${esc(u.x)}</p></div>`).join('')}</div>
-      <span class="pillar-more">Conoce más sobre este eje →</span></a>`).join('')}
-      <img class="plan-shield" src="${esc(src('assets/plan/escudo.webp'))}" alt="Plan Contigo" width="150" height="160"></div>`;
-  const plan = () => pillars.length ? `${s.plan_quote ? `<blockquote class="plan-quote rv">“${esc(s.plan_quote)}”</blockquote>` : ''}<div class="plan rv">${planGrid()}
+  // Mapa interactivo del cantón: coordenadas en píxeles de la imagen (1672 × 941).
+  const MW = 1672, MH = 941;
+  const MAP = {
+    pozul: { pin: [412, 335], hit: [[378, 300, 498, 428], [68, 152, 228, 192]],
+      it: [[50, 200, 295, 256, 39], [50, 258, 295, 308, 40], [50, 310, 295, 364, 41], [50, 366, 295, 420, 42], [50, 422, 295, 476, 131]] },
+    celica: { pin: [692, 300], hit: [[636, 258, 782, 412], [806, 120, 964, 162]],
+      it: [[740, 160, 846, 266, 35], [848, 160, 990, 266, 36], [992, 160, 1078, 266, 37], [1080, 160, 1180, 266, 38], [1182, 160, 1258, 266, 129]] },
+    cruzpamba: { pin: [988, 405], hit: [[958, 370, 1188, 458], [1360, 142, 1580, 182]],
+      it: [[1338, 188, 1638, 234, 43], [1338, 236, 1638, 280, 44], [1338, 282, 1638, 326, 45], [1338, 328, 1638, 378, 46], [1338, 380, 1638, 420, 133], [1338, 422, 1638, 474, 134]] },
+    sabanilla: { pin: [700, 582], hit: [[664, 548, 836, 690], [128, 652, 336, 692]],
+      it: [[52, 694, 176, 816, 47], [178, 694, 286, 816, 48], [288, 694, 360, 816, 49], [362, 694, 460, 816, 50], [462, 694, 548, 816, 135], [550, 694, 662, 816, 136]] },
+    algarrobillo: { pin: [1093, 540], hit: [[966, 506, 1222, 688], [1274, 504, 1652, 562]],
+      it: [[1256, 568, 1652, 609, 51], [1256, 610, 1652, 649, 52], [1256, 650, 1652, 690, 53], [1256, 691, 1652, 731, 54], [1256, 732, 1652, 771, 137], [1256, 772, 1652, 814, 138]] }
+  };
+  const BRIDGES = [[560, 452, 167, 'La Sanguí', 'celica'], [830, 458, 167, 'La Quiara', 'celica'], [300, 520, 169, 'Guángulo', 'pozul'], [520, 540, 170, 'Higuerón', 'sabanilla'], [930, 575, 171, 'Balsas', 'algarrobillo']];
+  const EJES = [[500, 852, 800, 926], [820, 852, 1112, 926], [1130, 852, 1372, 926], [1392, 852, 1648, 926]];
+  const box = r => r.join(','), pinPos = r => r.join(',');
+  const propHref = (id, sl) => href(sl ? `parroquia/${sl}/#p-${id}` : `#p-${id}`);
+  const pTitle = id => (of('proposals').find(x => x.id === id) || {}).title || '';
+  const bridgeSvg = '<svg viewBox="0 0 48 28" aria-hidden="true"><path d="M3 20 Q24 -2 45 20" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M2 16h44" stroke="currentColor" stroke-width="3.4"/><path d="M10 16v-6M17 16V7M24 16V5M31 16V7M38 16v-6" stroke="currentColor" stroke-width="2"/><path d="M6 16v10M42 16v10" stroke="currentColor" stroke-width="4"/><path d="M0 26c6-3 10 3 16 0s10 3 16 0 10 3 16 0" fill="none" stroke="#2f8fd8" stroke-width="2.4"/></svg>';
+  const cmap = () => `<div class="cmap rv" data-cmap>
+    <p class="cmap-hint">👆 Toca una parroquia para ampliarla, una propuesta para leerla o un eje para conocerlo.<span class="cmap-sw"> Desliza el mapa hacia los lados.</span></p>
+    <div class="cmap-scroll"><div class="cmap-stage">
+      <img src="${esc(src('assets/plan/mapa-canton-celica.webp'))}" alt="Mapa del cantón Celica con sus parroquias y las propuestas del Plan Contigo" width="${MW}" height="${MH}" decoding="async">
+      ${Object.entries(MAP).filter(([sl]) => pmap[sl]).map(([sl, m]) => m.hit.map(r => `<button type="button" class="hs hs-par" data-par="${sl}" data-b="${box(r)}" aria-label="Ampliar la parroquia ${esc(pmap[sl].name)}"></button>`).join('')
+        + m.it.map(([x, y, x2, y2, id]) => `<a class="hs hs-it" data-p="${id}" href="${esc(propHref(id, sl))}" data-b="${box([x, y, x2, y2])}" title="${esc(pTitle(id))}"><span class="vh">${esc(pTitle(id))}</span></a>`).join('')).join('')}
+      ${BRIDGES.map(([x, y, id, n, sl]) => `<a class="hs-br" data-p="${id}" href="${esc(propHref(id, sl))}" data-b="${pinPos([x, y])}" title="Puente para ${esc(n)}">${bridgeSvg}<span>Puente ${esc(n)}</span></a>`).join('')}
+      ${pillars.slice(0, 4).map((o, i) => `<a class="hs hs-eje" href="${href('eje/' + o.slug + '/')}" data-b="${box(EJES[i])}" title="Eje ${i + 1}: ${esc(o.title)}"><span class="vh">Eje ${i + 1}: ${esc(o.title)}</span></a>`).join('')}
+    </div></div>
+    <div class="cmap-layer" hidden></div>
+    <nav class="cmap-ejes" aria-label="Los 4 ejes del Plan Contigo">${pillars.map((o, i) => `<a class="pillar-mini c-${esc(o.color || 'azul')}" href="${href('eje/' + o.slug + '/')}"><b>${i + 1}.</b> ${esc(o.title)} →</a>`).join('')}</nav>
+  </div>`;
+  const cmapLayer = sl => {
+    const pa = pmap[sl], list = of('proposals').filter(x => x.parish === sl || x.also === sl);
+    return `<div class="cl-in"><button type="button" class="cl-x" aria-label="Cerrar">×</button>
+      <span class="kicker">${esc(pa.kicker || 'Parroquia')}</span><h3>${esc(pa.name)}</h3>${pa.tagline ? `<p class="cl-tag">${esc(pa.tagline)}</p>` : ''}
+      <ul class="cl-list">${list.map(x => `<li><a data-p="${x.id}" href="${esc(propHref(x.id, sl))}">${/puente/i.test(x.title) ? '🌉 ' : ''}${esc(x.title)}</a></li>`).join('')}</ul>
+      <a class="btn cl-go" href="${href('parroquia/' + sl + '/')}">Ir a la página de ${esc(pa.short || pa.name)} →</a></div>`;
+  };
+  const plan = () => pillars.length ? `${s.plan_quote ? `<blockquote class="plan-quote rv">“${esc(s.plan_quote)}”</blockquote>` : ''}<div class="plan rv">${cmap()}
     ${s.plan_image ? `<p class="plan-full"><a href="${esc(src(s.plan_image))}" data-lb data-cap="${esc(s.plan_title)}">🔍 Ver infografía completa</a></p>` : ''}</div>${facts(s.plan_commitments).length ? `<div class="commit">${facts(s.plan_commitments).map(([t, x]) => `<div class="commit-i rv"><h4>${esc(t)}</h4><p>${esc(x)}</p></div>`).join('')}</div>` : ''}` : '';
 
   // ---------- piezas
@@ -324,6 +358,38 @@
   });
   const pmHash = () => { const m = location.hash.match(/^#p-(\d+)$/); if (m && pmCards[m[1]]) pmOpen(pmCards[m[1]]); };
   addEventListener('hashchange', pmHash); pmHash();
+
+  // Mapa del cantón: la parroquia se amplía como una capa con sus propuestas.
+  const cm = $('[data-cmap]');
+  if (cm) {
+    const stage = $('.cmap-stage', cm), layer = $('.cmap-layer', cm), P = (v, t) => (v / t * 100).toFixed(2) + '%';
+    $$('[data-b]', cm).forEach(el => {
+      const [x, y, x2, y2] = el.dataset.b.split(',').map(Number);
+      el.style.left = P(x, MW); el.style.top = P(y, MH);
+      if (x2) { el.style.width = P(x2 - x, MW); el.style.height = P(y2 - y, MH); }
+    });
+    let cmFrom = null;
+    const cmOpen = (sl, from) => {
+      const m = MAP[sl]; if (!m || !pmap[sl]) return;
+      cmFrom = from; stage.style.transformOrigin = `${m.pin[0] / MW * 100}% ${m.pin[1] / MH * 100}%`;
+      layer.innerHTML = cmapLayer(sl); layer.classList.toggle('left', m.pin[0] > MW / 2);
+      layer.hidden = false; cm.classList.add('zoom'); void layer.offsetWidth; layer.classList.add('in');
+      $('.cl-x', layer).focus({ preventScroll: true });
+      if (matchMedia('(max-width:700px)').matches) layer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+    const cmClose = () => {
+      if (layer.hidden) return; cm.classList.remove('zoom'); layer.classList.remove('in');
+      setTimeout(() => { layer.hidden = true; layer.innerHTML = ''; }, 250); cmFrom?.focus({ preventScroll: true });
+    };
+    cm.addEventListener('click', e => {
+      const par = e.target.closest('[data-par]');
+      if (par && !cm.classList.contains('zoom')) { e.preventDefault(); return cmOpen(par.dataset.par, par); }
+      if (e.target.closest('.cl-x') || (cm.classList.contains('zoom') && e.target.closest('.cmap-stage'))) { e.preventDefault(); return cmClose(); }
+      const a = e.target.closest('a[data-p]');
+      if (a && pmCards[a.dataset.p]) { e.preventDefault(); pmOpen(pmCards[a.dataset.p]); history.replaceState(null, '', '#p-' + a.dataset.p); }
+    });
+    addEventListener('keydown', e => { if (e.key === 'Escape' && pm.hidden) cmClose(); });
+  }
 
   // Visor: fotos, videos subidos y YouTube. Al cerrar se detiene la reproducción.
   const lb = $('.lb'), lbm = $('.lb-m', lb);
