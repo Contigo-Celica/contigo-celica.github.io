@@ -88,6 +88,9 @@
         return `<div class="media" data-type="${f.type}">${prev}<div class="mf"><b>${lbl}</b><input name="${f.name}" value="${esc(v)}" placeholder="Sube un archivo o pega una URL https://"${req}>
           <div class="mb"><label class="btn sm g">Subir ${f.type === 'image' ? 'imagen' : 'video'}<input type="file" hidden accept="${f.type === 'image' ? 'image/jpeg,image/png,image/webp,image/gif' : 'video/mp4,video/webm'}"></label><button type="button" class="btn sm g clr">Quitar</button></div></div></div>`;
       }
+      case 'props': return `<div class="full pick"><b>${lbl}</b><input type="hidden" name="${f.name}" value="${esc(v)}"><div class="pk-chips"></div>
+        <input type="search" class="pk-q" placeholder="Escribe el nombre o N.º de la propuesta, p. ej. «puente» o «corazón de mujer»" autocomplete="off"><ul class="pk-res" hidden></ul>
+        <small class="muted">Puedes conectar varias. Si lo conectas a un macroproyecto, también se verá en él.</small></div>`;
       default: return `<label>${lbl}<input name="${f.name}" type="${{ url: 'url', email: 'email', date: 'date' }[f.type] || 'text'}" value="${esc(v)}"${req}></label>`;
     }
   }
@@ -122,6 +125,34 @@
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm g'; b.textContent = 'Portada desde el enlace';
     b.onclick = guard(async () => { const v = pick(); if (!v) throw new Error('Primero pega un enlace de Facebook, Instagram o TikTok.'); await fetchCover(v); });
     img.closest('.media').querySelector('.mb').append(b);
+  }
+  // Buscador de propuestas y macroproyectos para conectar fotos y videos.
+  let propCache = null;
+  async function bindPick(root) {
+    const boxes = $$('.pick', root); if (!boxes.length) return;
+    propCache = propCache || ok(await sb.from('items').select('id,data,status').eq('kind', 'proposals').order('sort')).map(r => ({ id: r.id, t: r.data.title || '', p: r.data.parish || '', par: r.data.parent || '', st: r.status }));
+    const isMacro = o => propCache.some(x => String(x.par).split(/[^\d]+/).includes(String(o.id)));
+    const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const label = o => `${isMacro(o) ? '⭐ ' : ''}${o.t} · ${pname(o.p)} · N.º ${o.id}${o.st !== 'publicado' ? ' (' + o.st + ')' : ''}`;
+    boxes.forEach(b => {
+      const inp = $('input[type=hidden]', b), q = $('.pk-q', b), res = $('.pk-res', b), chips = $('.pk-chips', b);
+      const ids = () => inp.value.split(/[^\d]+/).filter(Boolean);
+      const set = a => { inp.value = [...new Set(a)].join(', '); draw(); };
+      const draw = () => { chips.innerHTML = ids().map(n => { const o = propCache.find(x => String(x.id) === n); return `<span class="pk-chip">${esc(o ? label(o) : 'N.º ' + n + ' (no encontrada)')}<button type="button" data-x="${n}" aria-label="Quitar">×</button></span>`; }).join('') || '<span class="muted">Sin conectar todavía.</span>'; };
+      const find = () => {
+        const w = norm(q.value.trim()); if (!w) { res.hidden = true; return; }
+        const hit = propCache.filter(o => !ids().includes(String(o.id)) && (String(o.id) === w || w.split(/\s+/).every(k => norm(o.t + ' ' + pname(o.p)).includes(k))))
+          .sort((a, c) => isMacro(c) - isMacro(a)).slice(0, 10);
+        res.innerHTML = hit.map(o => `<li><button type="button" data-a="${o.id}">${esc(label(o))}</button></li>`).join('') || '<li class="muted">No hay coincidencias.</li>';
+        res.hidden = false;
+      };
+      q.addEventListener('input', find); q.addEventListener('focus', find);
+      q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('button', res)?.click(); } });
+      res.addEventListener('click', e => { const a = e.target.closest('[data-a]'); if (!a) return; set([...ids(), a.dataset.a]); q.value = ''; res.hidden = true; q.focus(); });
+      chips.addEventListener('click', e => { const x = e.target.closest('[data-x]'); if (x) set(ids().filter(n => n !== x.dataset.x)); });
+      document.addEventListener('click', e => { if (!b.contains(e.target)) res.hidden = true; });
+      draw();
+    });
   }
   function collect(form, fields) {
     const out = {};
@@ -256,7 +287,7 @@
     view.innerHTML = `<div class="bar"><h1>${id === 'new' ? 'Nuevo' : 'Editar'} · ${esc(c.label)}</h1><a class="btn g" href="#/c/${kind}">← Volver</a></div>
       <form class="panel form">${c.fields.map(f => field(f, it[f.name])).join('')}${stSel}<label>Orden (menor aparece primero)<input type="number" name="sort" value="${+it.sort || 0}"></label>
       <div class="full"><button class="btn">Guardar</button></div></form>`;
-    const form = $('form', view); bindMedia(form); bindSocial(form);
+    const form = $('form', view); bindMedia(form); bindSocial(form); await bindPick(form);
     form.onsubmit = guard(async e => {
       e.preventDefault();
       const data = { ...(it._data || {}), ...collect(form, c.fields) };

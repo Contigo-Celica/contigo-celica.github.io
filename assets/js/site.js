@@ -140,10 +140,21 @@
     return (k.length ? `<div class="rel kids"><b>Proyectos que forman parte de este macroproyecto</b>${k.map(relA).join('')}</div>` : '')
       + (r.length ? `<div class="rel"><b>Propuestas relacionadas</b>${r.map(relA).join('')}</div>` : ''); };
   const macroA = x => parentsOf(x).map(m => `<a class="macro-a rel-a" data-p="${m.id}" href="${esc(href('#p-' + m.id))}"><small>⭐ Forma parte del macroproyecto</small>${esc(m.title)} →</a>`).join('');
+  // Fotos y videos de la galería (y comunidades o noticias) conectados a una propuesta; un macroproyecto reúne también los de sus proyectos.
+  const linkIds = i => String(i.props || '').split(/[^\d]+/).filter(Boolean);
+  const mediaPool = [...of('gallery'), ...of('communities').map(c => ({ ...c, title: c.name, caption: c.description })), ...of('news').map(n => ({ ...n, caption: n.summary }))].filter(i => linkIds(i).length);
+  const mediaOf = x => { const ids = new Set([x, ...kidsOf(x)].map(o => String(o.id))); return mediaPool.filter(i => linkIds(i).some(n => ids.has(n))); };
+  const pmMedia = x => {
+    const fig = mediaOf(x).map(i => {
+      const m = i.video ? `<video src="${esc(src(i.video))}#t=0.5" controls preload="metadata" playsinline${i.image ? ` poster="${esc(src(thumb(i.image)))}"` : ''}></video>` : galItem(i, 'pm-g-a', 'pm-g-img');
+      return m ? `<figure class="pm-g">${m}${i.title ? `<figcaption>${esc(i.title)}${i.parish ? ` · ${esc(parishNames[i.parish] || '')}` : ''}</figcaption>` : ''}</figure>` : '';
+    }).join('');
+    return fig ? `<div class="pm-gal"><h4>🎬 Fotos y videos de esta propuesta</h4><div class="pm-gal-g">${fig}</div></div>` : '';
+  };
   const propsGrid = list => `<div class="grid3 props">${list.map(x => { const hasDoc = safeDoc(x.doc) || safeDoc(x.doc2); return `<article class="card prop rv" data-id="${x.id}" data-parish="${esc(x.parish || '')}" data-also="${esc(x.also || '')}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="Leer la propuesta: ${esc(x.title)}">
       ${x.image ? pic(x.image, x.title, 'card-img') : ''}<div class="card-b">${propTags(x)}
-      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}${parentsOf(x).map(m => `<span class="prop-macro">⭐ Parte de «${esc(m.title.split(':')[0])}»</span>`).join('')}${kidsOf(x).length ? `<span class="prop-macro">⭐ Reúne ${kidsOf(x).length} proyectos</span>` : ''}<span class="prop-more">${hasDoc ? '📄 Incluye proyecto completo · ' : ''}Leer propuesta completa →</span></div>
-      <template class="prop-full">${x.image ? `<div class="pm-img">${pic(x.image, x.title, '', true)}</div>` : ''}<div class="pm-b">${propTags(x)}<h3 id="pm-t">${esc(x.title)}</h3>${macroA(x)}${x.summary ? `<p class="pm-lead">${esc(x.summary)}</p>` : ''}${hasDoc ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<div class="prose">${paras(x.body)}</div>` : ''}${relLinks(x)}</div></template></article>`; }).join('')
+      <h3>${esc(x.title)}</h3>${x.summary ? `<p>${esc(x.summary)}</p>` : ''}${parentsOf(x).map(m => `<span class="prop-macro">⭐ Parte de «${esc(m.title.split(':')[0])}»</span>`).join('')}${kidsOf(x).length ? `<span class="prop-macro">⭐ Reúne ${kidsOf(x).length} proyectos</span>` : ''}<span class="prop-more">${hasDoc ? '📄 Incluye proyecto completo · ' : ''}${mediaOf(x).length ? '🎬 Con fotos y videos · ' : ''}Leer propuesta completa →</span></div>
+      <template class="prop-full">${x.image ? `<div class="pm-img">${pic(x.image, x.title, '', true)}</div>` : ''}<div class="pm-b">${propTags(x)}<h3 id="pm-t">${esc(x.title)}</h3>${macroA(x)}${x.summary ? `<p class="pm-lead">${esc(x.summary)}</p>` : ''}${hasDoc ? `<div class="docs">${docBtns(x)}</div>` : ''}${x.body ? `<div class="prose">${paras(x.body)}</div>` : ''}${pmMedia(x)}${relLinks(x)}</div></template></article>`; }).join('')
     || '<p class="muted empty">Muy pronto publicaremos las propuestas.</p>'}</div>`;
 
   // Portada de una publicación de red social: imagen subida o tarjeta con el color de la red.
@@ -348,7 +359,7 @@
     void pm.offsetWidth; pm.classList.add('in'); $('.pm-x', pm).focus({ preventScroll: true });
   };
   const pmClose = () => {
-    if (pm.hidden) return; pm.classList.remove('in'); document.documentElement.classList.remove('pm-on');
+    if (pm.hidden) return; $$('video', pm).forEach(v => v.pause()); pm.classList.remove('in'); document.documentElement.classList.remove('pm-on');
     setTimeout(() => { pm.hidden = true; pmc.innerHTML = ''; }, 220); pmFrom?.focus({ preventScroll: true });
   };
   document.addEventListener('click', e => {

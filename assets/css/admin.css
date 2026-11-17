@@ -41,3 +41,12 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--p);box-shad
 a.stat{text-decoration:none;color:inherit}.grow{flex:1;min-width:160px}.mt{margin-top:20px}
 .media img{background:#4b1a66}
 .docic{width:120px;height:90px;border-radius:8px;background:#efe6f5;display:grid;place-items:center;font-weight:800;font-size:1.3rem;color:var(--p)}.media small{font-size:.75rem}
+
+.pick{position:relative;display:flex;flex-direction:column;gap:8px}
+.pk-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pk-chip{display:inline-flex;align-items:center;gap:6px;background:#f1e8f7;color:#4b1a66;border:1px solid #d9c3e8;border-radius:999px;padding:4px 6px 4px 12px;font-size:.85rem;font-weight:600}
+.pk-chip button{border:0;background:#6F2C91;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;line-height:1}
+.pk-res{position:absolute;left:0;right:0;top:100%;z-index:20;list-style:none;margin:4px 0 0;padding:6px;background:#fff;border:1px solid #d9c3e8;border-radius:12px;box-shadow:0 12px 30px rgba(60,20,90,.18);max-height:320px;overflow:auto}
+.pk-res li{padding:0}.pk-res li.muted{padding:8px 10px}
+.pk-res button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 10px;border-radius:8px;cursor:pointer;font:inherit}
+.pk-res button:hover{background:#EAE84B}
