@@ -296,3 +296,4 @@ html.pm-on{overflow:hidden}
 .pm-g-a{position:relative;display:block}.pm-g-a .play{position:absolute;inset:0;margin:auto}
 .pm-g figcaption{padding:8px 12px;font-size:.82rem;font-weight:700;color:var(--ink)}
 .pm-gal-g:has(> .pm-g:only-child){grid-template-columns:1fr}
+img.img-off{object-fit:contain!important;background:linear-gradient(135deg,#6F2C91,#2a0d3b);padding:12%}

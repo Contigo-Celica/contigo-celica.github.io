@@ -15,9 +15,25 @@
     items = it.data.map(r => ({ ...r.data, id: r.id, kind: r.kind, created: r.created }));
     ideas = id.data || [];
   } catch (e) {
-    root.innerHTML = '<p class="loading">No se pudo cargar el contenido. Revisa tu conexión y recarga la página.</p>';
-    return;
+    // Si Supabase no responde (caída o límite del plan), se usa la copia del contenido guardada en el sitio.
+    try {
+      const r = await fetch(ROOT + 'assets/data/contenido.json', { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      s = Object.fromEntries(j.settings.map(r => [r.k, r.v]));
+      items = j.items.map(r => ({ ...r.data, id: r.id, kind: r.kind, created: r.created }));
+      ideas = [];
+      if (/supabase\.co\/storage/.test(s.hero_photo || '')) s.hero_photo = 'assets/brand/candidato.webp';
+      console.warn('Contenido cargado desde la copia del sitio (' + j.saved + ').', e);
+    } catch {
+      root.innerHTML = '<p class="loading">No se pudo cargar el contenido. Revisa tu conexión y recarga la página.</p>';
+      return;
+    }
   }
+  // Si una foto subida no se puede descargar, se muestra el logo en su lugar en vez de una imagen rota.
+  document.addEventListener('error', e => {
+    const t = e.target;
+    if (t.tagName === 'IMG' && !t.dataset.off && /supabase\.co\/storage/.test(t.src)) { t.dataset.off = '1'; t.classList.add('img-off'); t.src = ROOT + 'assets/brand/logo-blanco.webp'; }
+  }, true);
   const of = (k, p) => items.filter(i => i.kind === k && (p === undefined || i.parish === p));
   const pmap = Object.fromEntries(of('parishes').map(p => [p.slug, p]));
   const parishes = window.APP.schema.parishes.map(([sl]) => pmap[sl]).filter(Boolean);
